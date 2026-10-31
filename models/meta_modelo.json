@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.25",
+  "version": "2026.10.31",
   "modelo": "HistGradientBoosting",
   "clases": [
     "AFib",
@@ -36,7 +36,6 @@
     "frac_rr_corto",
     "frac_rr_largo",
     "tpr",
-    "sampen",
     "sig_std",
     "sig_p2p",
     "sig_skew",
@@ -44,13 +43,28 @@
     "sig_sqi_qrs",
     "sig_ruido_alto",
     "sig_deriva",
-    "sig_frac_plana"
+    "sig_frac_plana",
+    "qrs_ancho_med",
+    "qrs_ancho_max",
+    "corr_plantilla_med",
+    "corr_plantilla_min",
+    "frac_latidos_atipicos",
+    "r_amp_cv",
+    "p_amp_rel",
+    "p_presente_frac",
+    "pr_intervalo",
+    "pr_std",
+    "p_corr_med",
+    "p_sin_qrs",
+    "t_amp_rel",
+    "sin_rr_valido"
   ],
   "ventana_s": 10,
   "fs": 500,
   "usa_senal": true,
-  "f1_macro_cv": 0.5516906666879151,
-  "f1_macro_test": 0.6396882163106891,
-  "n_ventanas": 17372,
-  "n_pacientes": 482
+  "fuente_picos": "detectados",
+  "f1_macro_cv": 0.5728077445234813,
+  "f1_macro_test": 0.5679257324828966,
+  "n_ventanas": 17393,
+  "n_pacientes": 471
 }

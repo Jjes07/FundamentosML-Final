@@ -10,6 +10,13 @@ Lista de cambios acordados por el equipo. Cada punto dice **qué** hacer, **por 
 - **Comentarios en el código.** Los bloques no evidentes llevan comentarios cortos, en infinitivo o tercera persona.
 - Las salidas cambiarán al aplicar estos cambios. Al final hay que **releer y reescribir todas las interpretaciones** con las salidas nuevas.
 
+## Estado
+
+- **Implementado (v1), falta ejecutar el notebook completo y revisar:** A1 a A8 y D2. El efecto de cada cambio se mide en la nueva sección 11.4 (registro de correcciones v0 → v1) y el de A6 en la sección 12.
+- **Desactualizadas tras v1:** todas las celdas de interpretación tienen todavía los números de v0. Se reescriben en la siguiente pasada (bloques B, C, E y resto de D), con las salidas nuevas.
+- **Nota de D2:** en una muestra de prueba, `p_sin_qrs` (ondas P sin QRS) no separó bien el Bloqueo AV; `p_presente_frac` sí. Revisar con las salidas completas si conviene mejorar esa heurística.
+- **Tiempo:** construir las ventanas ahora tarda más (detección de picos y morfología en cada ventana): unos 40 s por cada 45 casos con 2 núcleos.
+
 ---
 
 ## A. Correcciones de datos y metodología (hacer primero; afectan todos los resultados)
@@ -39,7 +46,9 @@ Lista de cambios acordados por el equipo. Cada punto dice **qué** hacer, **por 
 
 **A7. Manejo de nulos.**
 - Por qué: `sampen` falta en el 62 % de las ventanas (en 10 s no hay latidos suficientes para calcularla). Las variables de RR son nulas cuando la ventana tiene menos de 4 latidos válidos, casi siempre ventanas de ruido. Hoy se rellenan con la **mediana**, y eso es engañoso: a una ventana de ruido se le asigna la frecuencia "típica" (unos 75 lpm) y parece ritmo normal. El nulo es información (falta *porque* no hay latidos), no un dato perdido al azar.
-- Cómo: eliminar `sampen`. Para las variables de RR: agregar una variable indicadora `sin_rr_valido` (1 si no se pudo calcular) e imputar con un valor fijo fuera de rango (p. ej. −1) o dejar NaN para HistGradientBoosting, que los maneja de forma nativa. No usar interpolación: las ventanas son independientes y no hay una serie que interpolar. Comparar mediana frente a indicador.
+- Cómo (decidido): eliminar `sampen`. Para las variables de RR, agregar una variable indicadora `sin_rr_valido` (1 si no se pudo calcular) e imputar con un **valor fijo fuera de rango (−1)** para **todos** los modelos, incluido HistGradientBoosting, aunque este maneje NaN de forma nativa. Así el tratamiento de nulos queda explícito, es igual para cualquier modelo y se puede justificar. No usar interpolación: las ventanas son independientes y no hay una serie que interpolar.
+- Justificación a escribir en el notebook: los nulos no son aleatorios (MNAR); aparecen cuando la ventana no tiene latidos válidos. La mediana borraría esa información y haría que el ruido pareciera ritmo normal. El indicador conserva la información, y el valor fijo evita inventar una frecuencia plausible.
+- Mostrar el antes (mediana) y el después (indicador + valor fijo).
 
 **A8. Revisar el mínimo de latidos por ventana (`MIN_LATIDOS = 6`).**
 - Por qué: descarta 60 ventanas; 20 son de Bloqueo AV y 19 de Disfunción del nodo, justamente las bradiarritmias con pausas largas, que son de las peligrosas. 6 latidos en 10 s equivalen a 36 lpm.

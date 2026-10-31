@@ -176,8 +176,9 @@ def entropia_muestral(x: np.ndarray, m: int = 2, r_frac: float = 0.2) -> float:
 NOMBRES_RR = [
     "n_latidos", "fc_media", "fc_pico", "rr_media", "rr_mediana", "sdnn", "rmssd", "pnn50", "pnn20",
     "cv_rr", "rr_min", "rr_max", "rr_iqr", "rr_mad", "rr_skew", "rr_kurt", "sd1", "sd2",
-    "sd1_sd2", "frac_rr_corto", "frac_rr_largo", "tpr", "sampen",
+    "sd1_sd2", "frac_rr_corto", "frac_rr_largo", "tpr",
 ]
+# v0 incluia "sampen" (entropia muestral): se elimino porque faltaba en el 62 % de las ventanas de 10 s
 NOMBRES_SENAL = [
     "sig_std", "sig_p2p", "sig_skew", "sig_kurt", "sig_sqi_qrs", "sig_ruido_alto",
     "sig_deriva", "sig_frac_plana",
@@ -217,7 +218,6 @@ def features_rr(picos: np.ndarray) -> dict:
     if len(rr) >= 3:
         a, b, c = rr[:-2], rr[1:-1], rr[2:]
         f["tpr"] = float(np.mean(((b > a) & (b > c)) | ((b < a) & (b < c))))
-    f["sampen"] = entropia_muestral(rr)
     return f
 
 
@@ -248,10 +248,113 @@ def features_senal(x_crudo: np.ndarray, fs: int = FS) -> dict:
     return f
 
 
+NOMBRES_MORF = [
+    "qrs_ancho_med", "qrs_ancho_max", "corr_plantilla_med", "corr_plantilla_min", "frac_latidos_atipicos",
+    "r_amp_cv", "p_amp_rel", "p_presente_frac", "pr_intervalo", "pr_std", "p_corr_med", "p_sin_qrs", "t_amp_rel",
+]
+NOMBRES_EXTRA = ["sin_rr_valido"]
+
+# Ventana alrededor de cada pico R usada para describir la forma del latido (segundos)
+_ANTES, _DESPUES = 0.35, 0.45
+
+
+def _quitar_tendencia(seg: np.ndarray) -> np.ndarray:
+    """Restar la recta que une los extremos del tramo (linea base local)."""
+    if len(seg) < 2:
+        return seg
+    return seg - np.linspace(seg[0], seg[-1], len(seg))
+
+
+def _ancho_qrs(latido: np.ndarray, centro: int, fs: int) -> float:
+    """Estimar el ancho del QRS: tramo alrededor del pico donde la pendiente supera el 20 % de su maximo."""
+    a, b = centro - int(0.12 * fs), centro + int(0.12 * fs)
+    d = np.abs(np.diff(latido[a:b]))
+    if d.max() <= 0:
+        return np.nan
+    sobre = np.where(d > 0.2 * d.max())[0]
+    return (sobre[-1] - sobre[0]) / fs
+
+
+def features_morfologia(x_crudo: np.ndarray, picos: np.ndarray, fs: int = FS) -> dict:
+    """Describir la forma de las ondas P, QRS y T a partir de la senal y de los picos R detectados.
+
+    Son las caracteristicas que usa un medico para separar ritmos con intervalos RR parecidos:
+    ancho del QRS (ventricular o no), presencia y forma de la onda P (sinusal, multifocal o ausente),
+    intervalo PR y ondas P sin QRS detras (bloqueo AV).
+    """
+    f = dict.fromkeys(NOMBRES_MORF, np.nan)
+    if x_crudo is None or len(picos) < 3:
+        return f
+    x = np.nan_to_num(np.asarray(x_crudo, dtype=float), nan=np.nanmedian(x_crudo))
+    xf = filtrar_ecg(x, fs)                 # 0.5-40 Hz: forma general y QRS
+    xp = filtrar_ecg(x, fs, 0.5, 15.0)      # 0.5-15 Hz: ondas P y T, mas suaves
+    antes, despues = int(_ANTES * fs), int(_DESPUES * fs)
+    idx = np.round(np.asarray(picos) * fs).astype(int)
+    idx = idx[(idx - antes >= 0) & (idx + despues < len(xf))]   # solo latidos completos
+    if len(idx) < 3:
+        return f
+
+    # Matriz de latidos alineados en el pico R (un latido por fila), centrados en su mediana
+    lat = np.stack([xf[i - antes:i + despues] for i in idx])
+    lat = lat - np.median(lat, axis=1, keepdims=True)
+    latp = np.stack([xp[i - antes:i + despues] for i in idx])
+    amp = np.abs(lat[:, antes - int(0.04 * fs):antes + int(0.04 * fs)]).max(axis=1)   # amplitud del QRS
+    amp_ref = np.median(amp) + 1e-9
+
+    # QRS: ancho y parecido con la plantilla (latido mediano de la ventana)
+    anchos = np.array([_ancho_qrs(b, antes, fs) for b in lat])
+    qrs = slice(antes - int(0.10 * fs), antes + int(0.12 * fs))
+    plantilla = np.median(lat, axis=0)
+    corr = np.array([np.corrcoef(b[qrs], plantilla[qrs])[0, 1] if b[qrs].std() > 0 else np.nan for b in lat])
+
+    # Onda P: buscar en 300 a 80 ms antes del pico R, sobre la senal suave y sin tendencia
+    p_a, p_b = antes - int(0.30 * fs), antes - int(0.08 * fs)
+    p_seg = np.stack([_quitar_tendencia(b[p_a:p_b]) for b in latp])
+    p_pos = np.abs(p_seg).argmax(axis=1)
+    p_amp = np.abs(p_seg)[np.arange(len(p_seg)), p_pos] / amp_ref
+    p_pres = p_amp > 0.06                       # P visible: al menos 6 % de la amplitud del QRS
+    pr = (p_b - p_a - p_pos + int(0.08 * fs)) / fs   # distancia del pico de la P al pico R
+    p_plant = np.median(p_seg, axis=0)
+    p_corr = np.array([np.corrcoef(s, p_plant)[0, 1] if s.std() > 0 and p_plant.std() > 0 else np.nan for s in p_seg])
+
+    # Onda T: 150 a 450 ms despues del pico R
+    t_a, t_b = antes + int(0.15 * fs), antes + int(0.45 * fs)
+    t_amp = np.array([np.abs(_quitar_tendencia(b[t_a:t_b])).max() for b in latp]) / amp_ref
+
+    # Ondas P sin QRS detras: en pausas largas, buscar una onda tipo P lejos de la T anterior y del QRS siguiente
+    rr = np.diff(idx) / fs
+    largas = np.where(rr > 1.5 * np.median(rr))[0]
+    bloqueadas = 0
+    p_ref = np.median(p_amp[p_pres]) if p_pres.any() else np.nan
+    for k in largas:
+        a, b = idx[k] + int(0.45 * fs), idx[k + 1] - int(0.30 * fs)
+        if b - a < int(0.10 * fs) or np.isnan(p_ref):
+            continue
+        tramo = np.abs(_quitar_tendencia(xp[a:b])) / amp_ref
+        pk, _ = signal.find_peaks(tramo, height=0.6 * p_ref, distance=int(0.2 * fs))
+        bloqueadas += len(pk)
+
+    f.update(
+        qrs_ancho_med=float(np.nanmedian(anchos)), qrs_ancho_max=float(np.nanmax(anchos)),
+        corr_plantilla_med=float(np.nanmedian(corr)), corr_plantilla_min=float(np.nanmin(corr)),
+        frac_latidos_atipicos=float(np.nanmean(corr < 0.8)), r_amp_cv=float(amp.std() / amp_ref),
+        p_amp_rel=float(np.median(p_amp)), p_presente_frac=float(p_pres.mean()),
+        pr_intervalo=float(np.median(pr[p_pres])) if p_pres.any() else np.nan,
+        pr_std=float(np.std(pr[p_pres])) if p_pres.sum() > 1 else np.nan,
+        p_corr_med=float(np.nanmedian(p_corr)), p_sin_qrs=float(bloqueadas / len(rr)),
+        t_amp_rel=float(np.median(t_amp)),
+    )
+    return f
+
+
 def features_ventana(picos_rel: np.ndarray, ecg_ventana: np.ndarray | None = None, fs: int = FS) -> dict:
-    """Unir las caracteristicas de RR y de senal de una ventana en un solo diccionario."""
+    """Unir las caracteristicas de ritmo (RR), senal y morfologia de una ventana en un solo diccionario."""
     f = features_rr(picos_rel)
     f.update(features_senal(ecg_ventana, fs) if ecg_ventana is not None else dict.fromkeys(NOMBRES_SENAL, np.nan))
+    f.update(features_morfologia(ecg_ventana, picos_rel, fs) if ecg_ventana is not None
+             else dict.fromkeys(NOMBRES_MORF, np.nan))
+    # Indicador explicito: 1 si no hubo latidos suficientes para calcular el ritmo (nulos informativos)
+    f["sin_rr_valido"] = float(np.isnan(f["fc_media"]))
     return f
 
 
