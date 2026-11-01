@@ -12,10 +12,20 @@ Lista de cambios acordados por el equipo. Cada punto dice **qué** hacer, **por 
 
 ## Estado
 
-- **Implementado (v1), falta ejecutar el notebook completo y revisar:** A1 a A8 y D2. El efecto de cada cambio se mide en la nueva sección 11.4 (registro de correcciones v0 → v1) y el de A6 en la sección 12.
-- **Desactualizadas tras v1:** todas las celdas de interpretación tienen todavía los números de v0. Se reescriben en la siguiente pasada (bloques B, C, E y resto de D), con las salidas nuevas.
-- **Nota de D2:** en una muestra de prueba, `p_sin_qrs` (ondas P sin QRS) no separó bien el Bloqueo AV; `p_presente_frac` sí. Revisar con las salidas completas si conviene mejorar esa heurística.
-- **Tiempo:** construir las ventanas ahora tarda más (detección de picos y morfología en cada ventana): unos 40 s por cada 45 casos con 2 núcleos.
+- **v2 congelada (1 de noviembre).** Bloques A, B, C, D, E, las correcciones N1 a N4 y el protocolo de evaluación P1 están hechos, ejecutados y con todas las interpretaciones escritas sobre sus salidas. Resultado base: **F1 macro 0.534 ± 0.019 en validación cruzada externa** (5 pliegues fijos por paciente), 0.534 en validación interna y 0.526 en el test fijo.
+- **Regla desde aquí:** no se cambia más la metodología. Cualquier mejora entra como experimento del bloque F, comparado contra la base con `cv_externa(modelo, X)` (sección 12.2). Si aparece un problema, se anota como limitación o como experimento, sin rehacer la base.
+- **Siguiente:** bloque F (experimentos); después G y H.
+
+### Correcciones previas a los experimentos (v2)
+
+- **N1. `sig_frac_plana` redefinida (hecho).** Ahora es la fracción de muestras en tramos idénticos de al menos 100 ms (línea plana real). Lo que medía en v1 (pares de muestras iguales, efecto de la cuantización) se conserva con su nombre real, `sig_frac_repetidas`, porque sí era informativo para el ruido; se advierte que depende de la resolución del equipo.
+- **N2. `p_sin_qrs` por plantilla de onda P (hecho).** Busca, en pausas largas, ondas con la forma de la P típica de la ventana. En una muestra de prueba su capacidad para separar el Bloqueo AV pasó de AUC 0.51 a 0.55: mejora poco, y se documenta como limitación. La versión v1 queda como `p_sin_qrs_v1` (solo para comparar).
+- **N3. Detector de picos v2 (hecho).** Umbral local en vez de por bloque, refractario de 200 ms, ajuste al máximo positivo y picos adicionales con pendiente de QRS. En una muestra por ritmo, la sensibilidad en TV pasó de 0.49 a 0.77 y en Ectopia ventricular de 0.71 a 0.86, sin perder precisión en Normal. El de v1 queda como `detectar_picos_r_v1`. Construir las ventanas tarda más, porque también se calculan las características con el detector de v1 para el registro de la sección 11.4.
+- **N3b. Piso del detector robusto a artefactos (hecho tras la primera corrida de v2).** El piso del umbral usaba el percentil 99 de la energía; en el caso 6069 un artefacto gigante (642 mV) lo subió tanto que el detector no encontró latidos en el tramo de validación y el caso se excluyó por error. Ahora el piso es el 20 % de la mediana de las alturas de los máximos. Con eso solo se excluye el caso 1165; el 6354, excluido en v1, era un error del detector de v1 (ajustaba al máximo absoluto) y no de la anotación.
+- **G5. Matrices de confusión sin cuadrícula (hecho).**
+- **P1. Protocolo de evaluación (hecho, decidido con Juan).** Pliegues fijos por paciente en `data/pliegues_pacientes.csv` (se crean en la primera ejecución y luego solo se leen; el pliegue 0 es el test fijo), validación interna con el tope solo al entrenar (antes se validaba sobre el train recortado y el F1 salía ~0.05 más alto) y validación cruzada externa de 5 pliegues (sección 12.2) como **métrica principal para los experimentos**, con la función reutilizable `cv_externa(modelo, X)`.
+- **N4. PCA con escalado robusto (hecho).** `RobustScaler` y recorte a ±5 en la sección 9.
+- **N5. Precisión de TV muy baja en distribución real.** Queda para el experimento F8 (umbrales por clase); ver si N3 la mejora.
 
 ---
 
@@ -213,7 +223,7 @@ Explicar que la tabla de comparación inicial (sección 11.1) usa hiperparámetr
 
 **G6. Explicar la importancia por permutación en el texto.** La barra es la caída media del F1 macro al barajar esa variable en test. La línea negra es la desviación estándar entre 10 repeticiones. Una barra cercana a 0 o negativa significa que la variable no aporta, o que barajarla incluso mejoró un poco por azar (son candidatas a eliminar).
 
-**G7. SHAP para las 10 clases.** Mostrar el gráfico de puntos (beeswarm) para cada clase, con su interpretación, y explicar cómo se lee: cada punto es una ventana; el eje x es cuánto empuja esa variable hacia la clase (derecha = a favor); el color es el valor de la variable (rojo alto, azul bajo); gris = valor faltante. Después de A3 y A7, revisar que Ruido ya no dependa de `n_latidos`.
+**G7. SHAP para las 10 clases (código hecho; falta ejecutar la celda e interpretar cada clase).** Mostrar el gráfico de puntos (beeswarm) para cada clase, con su interpretación, y explicar cómo se lee: cada punto es una ventana; el eje x es cuánto empuja esa variable hacia la clase (derecha = a favor); el color es el valor de la variable (rojo alto, azul bajo); gris = valor faltante. Después de A3 y A7, revisar que Ruido ya no dependa de `n_latidos`.
 
 **G8. Explicar la prueba de etiquetas barajadas (14.3).** Se mezclan al azar las etiquetas de train, rompiendo la relación entre señal y ritmo, y se repite la validación. Si el F1 sigue alto, hay fuga o estructura espuria; si cae al azar (como pasó: 0.08), el modelo aprende la relación real.
 

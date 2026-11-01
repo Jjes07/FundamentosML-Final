@@ -88,7 +88,60 @@ def filtrar_ecg(x: np.ndarray, fs: int = FS, low: float = 0.5, high: float = 40.
 
 
 def detectar_picos_r(x: np.ndarray, fs: int = FS) -> np.ndarray:
-    """Detectar picos R con un Pan-Tompkins simplificado.
+    """Detectar picos R (version v2). Devuelve los tiempos de los picos en segundos (relativos al inicio de x).
+
+    Cambios frente a v1 (que perdia latidos anchos de TV y ectopia ventricular):
+    - umbral local (30 % del maximo de energia en +-1 s) en vez de uno por bloque de 10 s: un latido gigante
+      ya no oculta a los pequenos de alrededor;
+    - periodo refractario de 200 ms (hasta 300 lpm) en vez de 250 ms;
+    - el pico se ajusta al maximo POSITIVO en +-90 ms (onda R de la derivacion II), no al maximo absoluto,
+      que en los QRS anchos caia en la onda S;
+    - se agregan picos de amplitud de la senal filtrada con pendiente de QRS (al menos 35 % de la pendiente
+      tipica de la ventana): recuperan QRS anchos con poca energia en 5-15 Hz sin tomar las ondas T, que son lentas.
+    """
+    from scipy.ndimage import maximum_filter1d
+    xf = filtrar_ecg(x, fs)
+    if len(xf) < fs:
+        return np.array([])
+    refract = int(0.20 * fs)
+    # 1) Energia del QRS: banda 5-15 Hz, derivada al cuadrado y media movil de ~120 ms
+    y = signal.sosfiltfilt(_sos(5, 15, fs), xf)
+    e = np.diff(y, prepend=y[0]) ** 2
+    w = max(int(0.12 * fs), 1)
+    e = np.convolve(e, np.ones(w) / w, mode="same")
+    # 2) Umbral local: 30 % del maximo de la energia en una ventana de 2 s. El piso usa la MEDIANA de las alturas
+    #    de todos los maximos (robusta a artefactos gigantes; un percentil alto se dejaba dominar por ellos)
+    cand, _ = signal.find_peaks(e, distance=refract)
+    if len(cand) == 0:
+        return np.array([])
+    piso = 0.2 * np.median(e[cand])
+    umbral = np.maximum(0.30 * maximum_filter1d(e, size=2 * fs), piso)
+    cand = cand[e[cand] > umbral[cand]]
+    # 3) Ajustar cada candidato al maximo positivo de la senal filtrada en +-90 ms (pico de la onda R)
+    r = int(0.09 * fs)
+    base = np.array([max(i - r, 0) + int(np.argmax(xf[max(i - r, 0):i + r + 1])) for i in cand], dtype=int)
+    # 4) Picos de amplitud con pendiente de QRS (captan QRS anchos que la energia 5-15 Hz no ve)
+    # pendiente maxima en +-40 ms alrededor de cada muestra (filtro de maximo movil sobre |derivada|)
+    pend = maximum_filter1d(np.abs(np.diff(xf, prepend=xf[0])), size=2 * int(0.04 * fs) + 1)
+    pend_ref = np.median(pend[base]) if len(base) else pend.max()
+    local = maximum_filter1d(np.abs(xf), size=2 * fs)
+    pk, prop = signal.find_peaks(xf, distance=refract, prominence=0)
+    if len(pk):
+        ok = (prop["prominences"] > 0.40 * local[pk]) & (pend[pk] >= 0.35 * pend_ref)
+        pk = pk[ok]
+    # 5) Unir ambas listas; si dos picos quedan a menos de 200 ms, se conserva el mas alto
+    picos = []
+    for i in np.sort(np.r_[base, pk]):
+        if picos and i - picos[-1] < refract:
+            if xf[i] > xf[picos[-1]]:
+                picos[-1] = i
+        else:
+            picos.append(i)
+    return np.array(picos, dtype=float) / fs
+
+
+def detectar_picos_r_v1(x: np.ndarray, fs: int = FS) -> np.ndarray:
+    """Detector de la version v1 (se conserva solo para comparar). Pan-Tompkins simplificado.
 
     Devuelve los tiempos de los picos en segundos (relativos al inicio de x).
     """
@@ -181,7 +234,7 @@ NOMBRES_RR = [
 # v0 incluia "sampen" (entropia muestral): se elimino porque faltaba en el 62 % de las ventanas de 10 s
 NOMBRES_SENAL = [
     "sig_std", "sig_p2p", "sig_skew", "sig_kurt", "sig_sqi_qrs", "sig_ruido_alto",
-    "sig_deriva", "sig_frac_plana",
+    "sig_deriva", "sig_frac_plana", "sig_frac_repetidas",
 ]
 
 
@@ -221,6 +274,14 @@ def features_rr(picos: np.ndarray) -> dict:
     return f
 
 
+def _frac_plana(x: np.ndarray, fs: int, min_s: float) -> float:
+    """Fraccion de muestras que pertenecen a tramos de valores identicos de al menos min_s segundos."""
+    cambio = np.r_[True, np.diff(x) != 0]
+    ids = np.cumsum(cambio)
+    largos = np.bincount(ids)[ids]
+    return float(np.mean(largos >= int(min_s * fs)))
+
+
 def features_senal(x_crudo: np.ndarray, fs: int = FS) -> dict:
     """Calcular caracteristicas de calidad y forma de la senal. Ayudan a detectar Ruido."""
     f = dict.fromkeys(NOMBRES_SENAL, np.nan)
@@ -243,7 +304,11 @@ def features_senal(x_crudo: np.ndarray, fs: int = FS) -> dict:
         sig_sqi_qrs=banda(5, 15) / total,          # fraccion de energia en la banda del QRS
         sig_ruido_alto=banda(40, 100) / total,     # ruido de alta frecuencia (electrobisturi, EMG)
         sig_deriva=banda(0, 0.5) / (total + banda(0, 0.5)),  # deriva de la linea base
-        sig_frac_plana=float(np.mean(np.abs(np.diff(x)) < 1e-6)),  # tramos sin senal (saturacion)
+        # Fraccion de muestras en tramos de valores identicos de al menos 100 ms: linea plana (electrodo
+        # desconectado o saturacion). En v1 esta variable contaba cualquier par de muestras iguales, que en una
+        # senal cuantizada pasa todo el tiempo; esa medida se conserva con su nombre real: sig_frac_repetidas
+        sig_frac_plana=_frac_plana(x, fs, 0.10),
+        sig_frac_repetidas=float(np.mean(np.abs(np.diff(x)) < 1e-6)),  # muestras seguidas identicas (suavidad/cuantizacion)
     )
     return f
 
@@ -321,18 +386,36 @@ def features_morfologia(x_crudo: np.ndarray, picos: np.ndarray, fs: int = FS) ->
     t_a, t_b = antes + int(0.15 * fs), antes + int(0.45 * fs)
     t_amp = np.array([np.abs(_quitar_tendencia(b[t_a:t_b])).max() for b in latp]) / amp_ref
 
-    # Ondas P sin QRS detras: en pausas largas, buscar una onda tipo P lejos de la T anterior y del QRS siguiente
+    # Ondas P sin QRS detras (v2): en las pausas largas se busca una onda con la misma FORMA que la P tipica de la
+    # ventana (correlacion > 0.8 con la plantilla de P) y amplitud parecida. En v1 se contaba cualquier pico
+    # de cierta altura despues de la T, y casi nunca se activaba.
     rr = np.diff(idx) / fs
-    largas = np.where(rr > 1.5 * np.median(rr))[0]
     bloqueadas = 0
+    p_amp_plant = np.abs(p_plant).max() / amp_ref if p_plant.std() > 0 else 0.0
+    L = len(p_plant)
+    if p_amp_plant >= 0.04:
+        for k in np.where(rr > 1.4 * np.median(rr))[0]:
+            a, b = idx[k] + int(0.25 * fs), idx[k + 1] - int(0.08 * fs)
+            if b - a <= L:
+                continue
+            tramo, ultimo = xp[a:b], -10 * fs
+            for j in range(0, len(tramo) - L, int(0.01 * fs)):
+                trozo = _quitar_tendencia(tramo[j:j + L])
+                if trozo.std() == 0 or j - ultimo < int(0.2 * fs):
+                    continue
+                if np.corrcoef(trozo, p_plant)[0, 1] > 0.8 and np.abs(trozo).max() / amp_ref > 0.5 * p_amp_plant:
+                    bloqueadas += 1
+                    ultimo = j
+    # Version v1 de la misma idea (solo para comparar en el notebook; no entra al modelo)
+    bloqueadas_v1 = 0
     p_ref = np.median(p_amp[p_pres]) if p_pres.any() else np.nan
-    for k in largas:
+    for k in np.where(rr > 1.5 * np.median(rr))[0]:
         a, b = idx[k] + int(0.45 * fs), idx[k + 1] - int(0.30 * fs)
         if b - a < int(0.10 * fs) or np.isnan(p_ref):
             continue
         tramo = np.abs(_quitar_tendencia(xp[a:b])) / amp_ref
         pk, _ = signal.find_peaks(tramo, height=0.6 * p_ref, distance=int(0.2 * fs))
-        bloqueadas += len(pk)
+        bloqueadas_v1 += len(pk)
 
     f.update(
         qrs_ancho_med=float(np.nanmedian(anchos)), qrs_ancho_max=float(np.nanmax(anchos)),
@@ -344,6 +427,7 @@ def features_morfologia(x_crudo: np.ndarray, picos: np.ndarray, fs: int = FS) ->
         p_corr_med=float(np.nanmedian(p_corr)), p_sin_qrs=float(bloqueadas / len(rr)),
         t_amp_rel=float(np.median(t_amp)),
     )
+    f["p_sin_qrs_v1"] = float(bloqueadas_v1 / len(rr))
     return f
 
 

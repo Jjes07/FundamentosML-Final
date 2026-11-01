@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.31",
+  "version": "2026.11.01",
   "modelo": "HistGradientBoosting",
   "clases": [
     "AFib",
@@ -44,6 +44,7 @@
     "sig_ruido_alto",
     "sig_deriva",
     "sig_frac_plana",
+    "sig_frac_repetidas",
     "qrs_ancho_med",
     "qrs_ancho_max",
     "corr_plantilla_med",
@@ -63,8 +64,8 @@
   "fs": 500,
   "usa_senal": true,
   "fuente_picos": "detectados",
-  "f1_macro_cv": 0.5728077445234813,
-  "f1_macro_test": 0.5679257324828966,
-  "n_ventanas": 17393,
-  "n_pacientes": 471
+  "f1_macro_cv": 0.534018603585035,
+  "f1_macro_test": 0.5257088231915737,
+  "n_ventanas": 17410,
+  "n_pacientes": 472
 }
