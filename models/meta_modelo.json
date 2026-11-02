@@ -1,6 +1,6 @@
 {
-  "version": "2026.11.01",
-  "modelo": "HistGradientBoosting",
+  "version": "2026.11.02",
+  "modelo": "XGBoost",
   "clases": [
     "AFib",
     "Bloqueo AV",
@@ -64,8 +64,11 @@
   "fs": 500,
   "usa_senal": true,
   "fuente_picos": "detectados",
-  "f1_macro_cv": 0.534018603585035,
-  "f1_macro_test": 0.5257088231915737,
+  "f1_macro_cv": 0.5352072214373378,
+  "f1_macro_test": 0.5413804425631242,
   "n_ventanas": 17410,
-  "n_pacientes": 472
+  "n_pacientes": 472,
+  "casos_excluidos": [
+    1165
+  ]
 }

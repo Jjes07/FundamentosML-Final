@@ -12,9 +12,40 @@ Lista de cambios acordados por el equipo. Cada punto dice **qué** hacer, **por 
 
 ## Estado
 
-- **v2 congelada (1 de noviembre).** Bloques A, B, C, D, E, las correcciones N1 a N4 y el protocolo de evaluación P1 están hechos, ejecutados y con todas las interpretaciones escritas sobre sus salidas. Resultado base: **F1 macro 0.534 ± 0.019 en validación cruzada externa** (5 pliegues fijos por paciente), 0.534 en validación interna y 0.526 en el test fijo.
-- **Regla desde aquí:** no se cambia más la metodología. Cualquier mejora entra como experimento del bloque F, comparado contra la base con `cv_externa(modelo, X)` (sección 12.2). Si aparece un problema, se anota como limitación o como experimento, sin rehacer la base.
-- **Siguiente:** bloque F (experimentos); después G y H.
+- **v3 final (2 de noviembre).** Bloques F, G, H e I terminados y ejecutados, con todas las interpretaciones escritas sobre sus salidas. Modelo final: XGBoost con pesos por clase, **F1 macro 0.545 ± 0.014 en validación cruzada externa** y 0.541 en el test fijo.
+- **v2 (1 de noviembre)** queda como base de los experimentos: F1 macro 0.534 ± 0.019 en validación cruzada externa y 0.526 en el test fijo. Se reprodujo en otra máquina con esos mismos valores.
+- **Regla de adopción (sección 12.3):** mejorar el F1 macro en al menos 0.005 de media, ganar en 4 de 5 pliegues y no bajar más de 0.02 el recall de TV, Bloqueo AV ni AFib. De 18 variantes, solo la cumplió XGBoost (ver tabla G2 en el notebook y `models/registro_experimentos.csv`).
+
+### Queda por hacer (requiere al equipo)
+
+- [ ] **Revisar la línea de tiempo de ritmos** y su interpretación (C4, pendiente de Juan).
+- [ ] **Grabar el video de 2 minutos** con la app y `demo/monitor.html`.
+- [ ] **Publicar la app** en Streamlit Community Cloud o Hugging Face Spaces: requiere una cuenta del equipo. Archivo principal: `app/app.py`; Python 3.13.
+- [ ] **Preparar la presentación final.**
+
+### Estado de los bloques F, G, H e I
+
+| Punto | Estado | Resultado |
+|---|---|---|
+| F1 Ventanas deslizantes | Hecho, descartado para entrenar | 0.531. El paso de 2 s se usa en la demo |
+| F2 Prioridad a lo anormal | Hecho, descartado | 0.525 |
+| F3 Aumento de datos | Hecho, descartado | SMOTE 0.552 y señal 0.559, pero bajan el recall de clases peligrosas |
+| F4 Tamaño de ventana | Hecho, no adoptado | 5 s: 0.477. 20 s: 0.576, no comparable y con el doble de latencia |
+| F5 Variables redundantes | Hecho, descartado | 0.535 |
+| F6 Ruido como filtro previo | Hecho, descartado | 0.534 |
+| F7 Dos etapas o fusión | Hecho, descartado | 0.532. Fusión: 0.575 frente a 0.578 |
+| F8 Umbrales (incluye N5) | Hecho, descartado por ahora | Bloqueo AV: recall 0.27, precisión 0.06. Queda como decisión clínica |
+| F9 Búsqueda ampliada | Hecho | **XGBoost adoptado (0.545)**. LightGBM 0.552, no cumple la regla. SVM 0.487 |
+| F10 Sin tope | Hecho, descartado | 0.537 |
+| F11 XGBoost + aumento (nuevo) | Hecho, descartado | 0.554, pero baja el recall de TV y Bloqueo AV |
+| G1 a G9 | Hechos | Secciones 11 a 14. Agrupado en normal y anormal: F1 0.878, sensibilidad 0.919, AUROC 0.968 |
+| H1 Probar la app | Hecho | Se corrigió: Bloqueo AV no tenía nombre ni alerta, y faltaban selector de ejemplos y validación de archivos |
+| H2 Ejemplos | Hecho | 3 tramos de 1 minuto de pacientes del test, elegidos solo por sus etiquetas |
+| H3 Formato de entrada | Hecho | Sección 15.2 y la propia app |
+| H4 Monitor | Hecho | `demo/monitor.html` |
+| H5 Tabla de deriva | Hecho | Sección 16.1 |
+| H6 Reentrenamiento | Hecho | `reentrenar.py`, ensayado en los dos sentidos. Sección 16.2 |
+| I1 Conclusiones | Hecho | Sección 17 |
 
 ### Correcciones previas a los experimentos (v2)
 
