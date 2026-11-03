@@ -148,7 +148,7 @@ Otras vías oficiales: `wget -r -N -c -np https://physionet.org/files/vitaldb-ar
 | `URLError` o timeout al bajar el ECG | Red inestable o servidor ocupado | Bajar `--workers` a 2 y reintentar; el script reintenta 3 veces cada caso |
 | El ZIP no se descarga | La URL de PhysioNet cambió | Usar la Opción B |
 | Un caso falla siempre | Ese caso no trae el canal `SNUADC/ECG_II` | Se omite; el notebook trabaja con los casos disponibles |
-| `vitaldb` o `shap` no se instalan | Versión de Python muy reciente | Usar Python 3.13, o Colab |
+| `vitaldb` o `shap` no se instalan | Versión de Python posterior a 3.13, sin paquetes publicados aún | Usar Python 3.13, que es la probada, o Colab |
 | Poco espacio | ~130 MB para los 482 casos | Usar `--max-casos 100` |
 
 `data/ecg_cache/` está en `.gitignore`. Las anotaciones (21 MB) pueden versionarse, pero conviene citar la fuente en lugar de duplicarla.

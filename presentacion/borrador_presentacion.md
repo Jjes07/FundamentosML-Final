@@ -4,8 +4,9 @@
 
 ---
 
-> **Estructura de la Presentación:**
-> Este documento contiene el diseño diapositiva a diapositiva (*Slide-by-Slide*) para la sustentación del proyecto final de Machine Learning, estructurado en torno a los 7 ejes requeridos por la **Sección 5 de `docs/Requeriments_FinalP.pdf`**. Cada diapositiva incluye: contenido visual proyectado, tablas estructuradas, figuras del repositorio a renderizar y notas completas para el orador con respaldo matemático, metodológico y clínico.
+> **Estructura de la presentación.** Diseño diapositiva a diapositiva para la sustentación, organizado según los 7 ejes de la **Sección 5 de `docs/Requeriments_FinalP.pdf`**. Cada diapositiva trae el contenido proyectado, las figuras del repositorio y las notas del orador.
+>
+> **Regla de este documento:** todo número sale de una salida visible de `model_development.ipynb` (versión v3, modelo final XGBoost). Si se cambia una cifra, verificarla antes en el notebook.
 
 ---
 
@@ -17,410 +18,396 @@
 | **02** | 1. Problema y Contexto | Necesidad Clínica en Quirófano y Filosofía de Apoyo | Diagrama de flujo asistencial |
 | **03** | 1. Problema y Contexto | VitalDB Arrhythmia Database y Hallazgos del EDA | `figures/eda_linea_tiempo.png` |
 | **04** | 1. Problema y Contexto | Estructura No Supervisada y Justificación del Modelo | `figures/no_supervisado_pca.png` |
-| **05** | 2. Metodología | Pipeline de Señal y Detección QRS Adaptativa v2 | Traza de detección en bisturí |
-| **06** | 2. Metodología | Ingeniería de 45 Features y Tratamiento de MNAR | Tabla de familias de features |
-| **07** | 3. Selección del Modelo | Protocolo por Paciente y Benchmark de Familias | Tabla comparativa de modelos |
-| **08** | 3. Selección del Modelo | Optimización, Ablación y Suite Experimental Bloque F | `figures/registro_correcciones.png` |
-| **09** | 4. Generalización | Validación Cruzada Externa y Test Ciego por Paciente | `figures/eval_cv_externa.png` |
-| **10** | 4. Generalización | Demostración Empírica Anti-Leakage y Brecha General | `figures/gen_curva_aprendizaje.png` |
-| **11** | 5. Métricas e Interpretabilidad | Desempeño Multiclase ante Desbalance Extremo | `figures/eval_confusion.png` & `eval_pr.png` |
-| **12** | 5. Métricas e Interpretabilidad | Interpretabilidad y Coherencia Electrofisiológica | `figures/explic_permutacion.png` & `explic_shap_global.png` |
-| **13** | 6. Despliegue Clínico | Arquitectura de Despliegue e Interfaz en Streamlit | Capturas reales de `app/app.py` |
-| **14** | 7. Monitoreo y MLOps | Detección de Deriva (PSI/KS) y Protocolo de Reajuste | `models/referencia_features.csv` |
-| **15** | Cierre | Conclusiones, Impacto Quirúrgico y Próximos Pasos | Hoja de ruta MLOps |
+| **05** | 2. Metodología | Pipeline de Señal y Detección QRS v2 | `figures/eda_ecg_clinico.png` |
+| **06** | 2. Metodología | 45 Características y Tratamiento de Faltantes | Tabla de familias de características |
+| **07** | 3. Selección del Modelo | Protocolo por Paciente y Comparación de Familias | Tabla comparativa de modelos |
+| **08** | 3. Selección del Modelo | Ablación y Experimentos del Bloque F | `figures/registro_correcciones.png` & `exp_resumen.png` |
+| **09** | 4. Generalización | Validación Cruzada Externa y Test Fijo por Paciente | `figures/eval_final_confusion.png` |
+| **10** | 4. Generalización | Demostración de Fuga de Datos y Curva de Aprendizaje | `figures/gen_curva_aprendizaje.png` |
+| **11** | 5. Métricas e Interpretabilidad | Desempeño por Clase y Comparación con los Autores | `figures/eval_final_confusion.png` & `eval_pr.png` |
+| **12** | 5. Métricas e Interpretabilidad | Explicabilidad y Coherencia Fisiológica | `figures/explic_permutacion.png` & `explic_shap_*.png` |
+| **13** | 6. Despliegue | App en Streamlit y Monitor de Demostración | Capturas de `app/app.py` y `demo/monitor.html` |
+| **14** | 7. Monitoreo y MLOps | Deriva (PSI/KS) y Reentrenamiento con `reentrenar.py` | Tablas de la sección 16 |
+| **15** | Cierre | Conclusiones, Limitaciones y Trabajo Futuro | Hoja de ruta |
 
 ---
 
 ## Diapositiva 01: Portada
 **Título:** Sistema de Apoyo a la Decisión Clínica para Monitoreo Intraoperatorio de ECG  
-**Subtítulo:** Detección Multiclase de Arritmias en Quirófano con HistGradientBoosting y Validación por Paciente  
-**Autores:** Equipo de Fundamentos de Machine Learning  
-**Institución:** Universidad EAFIT — Maestría / Pregrado en Ciencia de Datos e Inteligencia Artificial  
+**Subtítulo:** Clasificación de 10 ritmos en quirófano con XGBoost y validación por paciente  
+**Autores:** Equipo de Fundamentos de Aprendizaje Automático  
+**Institución:** Universidad EAFIT, Fundamentos de Aprendizaje Automático  
 **Fecha:** Noviembre 2026  
 
 ### Contenido Visual Sugerido
-- Traza limpia de ECG intraoperatorio de 10 s superpuesta con bandas de alerta clínica (Verde: Normal, Rojo: Arritmia Crítica, Gris: Ruido).
-- Esquema de bloques: Señal Cruda (500 Hz) $\to$ Detección QRS Adaptativa $\to$ 45 Características $\to$ HistGradientBoosting $\to$ Priorización de Alertas.
+- Traza de ECG de 10 s con bandas de color por estado (verde: sin alerta, ámbar: revisar, rojo: alerta, gris: ruido), los mismos colores de la app.
+- Esquema de bloques: Señal cruda (500 Hz) → Detección de picos R → 45 características → XGBoost → Alerta o revisión.
 
 ### Notas del Orador
-> "Buenos días a todos. En los quirófanos modernos, un anestesiólogo supervisa simultáneamente hemodinámica, profundidad anestésica, ventilación mecánica y el electrocardiograma continuo. Durante una cirugía, hasta el 70% de las alarmas acústicas son artefactos o falsas alarmas, generando fatiga por alarmas y desensibilización sensorial. Presentamos hoy un sistema de apoyo a la decisión clínica para monitoreo intraoperatorio de ECG, basado en la base de datos abierta VitalDB Arrhythmia Database, diseñado específicamente para priorizar alertas con rigor fisiológico, control estricto de fuga de datos por paciente y observabilidad continua en producción."
+> "Buenos días. Durante una cirugía, el anestesiólogo vigila al paciente en un monitor mientras atiende muchas otras tareas. Las arritmias intraoperatorias son frecuentes; la mayoría son benignas, pero algunas, como la taquicardia ventricular, exigen respuesta inmediata. Presentamos un sistema de apoyo que señala automáticamente los tramos de ECG con ritmo anormal, construido sobre la base abierta VitalDB Arrhythmia Database, con separación estricta por paciente y una ruta completa hasta producción."
 
 ---
 
 ## Diapositiva 02: El Problema y Contexto Clínico (Eje 1)
-**Título:** Desafíos del Monitoreo Intraoperatorio de ECG: Apoyo vs. Diagnóstico Autónomo  
+**Título:** Monitoreo Intraoperatorio de ECG: Apoyo, no Diagnóstico Autónomo  
 **Eje Temático:** 1. El Problema y Contexto Clínico (Sección 3.1)
 
 ### Contenido de la Diapositiva
-- **Entorno Operatorio:**
-  - Derivación estándar intraoperatoria: **Derivación II (DII)** adquirida a **500 Hz**.
-  - Pacientes bajo anestesia general e intubación orotraqueal, sometidos a fármacos vasoactivos, anestésicos halogenados y estrés quirúrgico.
-- **Interferencia Quirúrgica Severa:**
-  - Presencia constante de electrobisturí/electrocauterio (ruido de alta frecuencia 40–100 Hz y pulsos saturantes de hasta $\pm 600\text{ mV}$), cambios de línea base por ventilación mecánica y desconexión transitoria de electrodos.
-- **Propósito del Modelo de ML:**
-  - **Priorización Inteligente de Alertas y Triage de Tramos Críticos**, NO un diagnosticador autónomo ni un reemplazo del anestesiólogo.
-  - Objetivo: Filtrar tramos no interpretables (ruido), discriminar arritmias estables vs. inestables y advertir de forma oportuna eventos de alto riesgo (Taquicardia Ventricular, Fibrilación Auricular con respuesta rápida).
+- **Entorno:**
+  - Una derivación, **DII**, a **500 Hz**.
+  - Pacientes bajo anestesia general: fármacos, estímulo quirúrgico y cambios autonómicos favorecen las arritmias.
+- **Interferencia propia del quirófano:**
+  - Electrobisturí (ruido de alta frecuencia), deriva de la línea base, movimiento y desconexión de electrodos.
+- **Propósito del modelo:**
+  - **Priorizar la atención** sobre tramos con ritmo anormal; no reemplaza al anestesiólogo ni diagnostica.
+  - Usuarios: anestesiólogos, técnicos y enfermería de quirófano o recuperación.
 
 ### Notas del Orador
-> "Es fundamental delimitar el alcance clínico: nuestro sistema no busca emitir un diagnóstico médico independiente ni reemplazar la responsabilidad del anestesiólogo o cardiólogo. En quirófano, la única derivación comúnmente monitorizada con alta resolución continua es la Derivación II a 500 Hz. El desafío reside en que el ECG intraoperatorio está plagado de artefactos severos de electrocauterio, movimiento del paciente y derivas ventilatorias. Un modelo clínicamente útil debe clasificar en ventanas cortas de 10 segundos, etiquetar con precisión el ruido para evitar falsos positivos catastróficos, y priorizar la atención médica en taquicardias ventriculares o fibrilaciones auriculares súbitas."
+> "Delimitamos el alcance desde el inicio: el sistema no diagnostica ni reemplaza al anestesiólogo. Trabaja con una sola derivación, la II, a 500 Hz, y clasifica ventanas de 10 segundos. El ECG intraoperatorio tiene artefactos de electrobisturí, movimiento y deriva de línea base, por eso el modelo debe reconocer el ruido como una clase propia y no confundirlo con una arritmia."
 
 ---
 
 ## Diapositiva 03: VitalDB Arrhythmia Database y EDA (Eje 1)
-**Título:** VitalDB: Caracterización del Dataset y Desbalance Intraoperatorio  
+**Título:** VitalDB: Caracterización del Dataset y Desbalance  
 **Eje Temático:** 1. El Problema y Contexto Clínico (Sección 3.3)
 
 ### Contenido de la Diapositiva
-- **Fuente de Datos y Anotación:**
-  - *VitalDB Arrhythmia Database* (PhysioNet, 2026): **482 cirugías** correspondientes a **473 pacientes únicos (`subjectid`)**.
-  - Más de 660,000 latidos anotados individualmente por cardiólogos expertos ($\kappa = 0.93$ de acuerdo interobservador).
-  - **10 clases modeladas:** `Normal`, `AFib`, `Ectopia ventricular`, `Ectopia auricular`, `Disfuncion nodo sinusal`, `SVTA`, `TV`, `Bloqueo AV`, `WAP/MAT`, `Ruido`.
-  - *Clase excluida:* `Inclasificable` (solo 8 ventanas en 2 pacientes, clínicamente ambiguas e inviables de validar de forma estratificada).
-- **Desbalance Severo de Clases:**
-  - Clases dominantes: `Normal` (61.7% de los latidos) y `AFib` (24.7% de los latidos) abarcan >86% de los datos.
-  - Clases críticas altamente minoritarias: `Bloqueo AV` (0.65% de latidos, presente en **solo 9 pacientes**) y `TV` (0.24% de latidos).
-- **Temporalidad y Duración de Episodios (`figures/eda_linea_tiempo.png`):**
-  - *Episodios largos:* Fibrilación Auricular (mediana 123.1 s), WAP/MAT (83.9 s), Bloqueo AV (77.9 s), Disfunción de nodo (41.2 s), Normal (33.2 s).
-  - *Episodios medios:* Ectopias auriculares y ventriculares (~14 s).
-  - *Salvas críticas ultracortas:* Taquicardia Ventricular (mediana **2.7 s**, percentil 90 = 6.2 s), SVTA (2.4 s), Ruido (5.4 s).
-  - *Justificación del Ventaneo:* Ventanas de 10 segundos con regla de inclusión de arritmias paroxísticas ($\ge 3$ latidos ectópicos consecutivos capturan la salva de TV sin diluirla en el ritmo sinusal basal).
-- **Limpieza Rigurosa de Datos:**
-  - Eliminación de filas marcadoras (`StartK`/`EndK` de `bad_signal_quality_label` sin `beat_type`), cuya inclusión ingenua creaba intervalos RR espurios de cientos de segundos.
-  - Exclusión justificada del **caso 1165** por desfase sistemático de anotación cardiaca ($>0.1\text{ s}$ de error de sincronía temporal en cabecera).
+- **Fuente y anotación:**
+  - *VitalDB Arrhythmia Database* (PhysioNet, 2026): **482 cirugías** de **473 pacientes (`subjectid`)**, más de **660,000 latidos** anotados.
+  - Anotación por un panel de **cinco anestesiólogos**; cada segmento lo etiquetaron al menos dos, hasta consenso. Concordancia: **kappa de Cohen 0.930 ± 0.130**.
+  - **10 clases modeladas:** Normal, AFib, Ectopia ventricular, Ectopia auricular, Disfunción del nodo sinusal, SVTA, TV, Bloqueo AV, WAP/MAT y Ruido.
+  - *Excluida:* Inclasificable (8 ventanas; zonas de transición sin ritmo definido).
+- **Desbalance (ventanas de 10 s, 50,517 en total):**
+  - Normal (31,441) y AFib (11,666) suman el **85 %**.
+  - TV: 242 ventanas en 87 pacientes. SVTA: 481 en 106.
+  - **Bloqueo AV: 409 ventanas de solo 9 pacientes. WAP/MAT: 867 de 23 pacientes.**
+- **Duración de los episodios (`figures/eda_linea_tiempo.png`), medianas:**
+  - Largos: AFib 123 s, WAP/MAT 84 s, Bloqueo AV 78 s, Disfunción del nodo 41 s, Normal 33 s.
+  - Medios: ectopias, unos 14 s.
+  - Muy cortos: **TV 2.7 s** (el 90 % dura menos de 6.2 s), SVTA 2.4 s, Ruido 5.4 s.
+  - *Ventana:* 10 s con cobertura ≥80 % del ritmo, o ≥3 latidos para TV y SVTA, para no diluir las salvas.
+- **Limpieza:**
+  - Se eliminan las filas marcadoras (`Start`/`End` sin tipo de latido), que se contaban como latidos y creaban RR falsos.
+  - Se excluye el **caso 1165**: anotación desalineada (desfase de −0.20 s y sensibilidad 0 con ambos detectores).
 
 ### Figura del Repositorio a Renderizar
-- `figures/eda_linea_tiempo.png` (Distribución de duraciones de episodios por tipo de ritmo).
+- `figures/eda_linea_tiempo.png`
 
 ### Notas del Orador
-> "Al explorar VitalDB encontramos un reto fundamental: el desbalance extremo y la asimetría temporal de los eventos. Mientras la Fibrilación Auricular suele persistir durante minutos enteros (mediana de 123 segundos), una salva de Taquicardia Ventricular dura apenas 2.7 segundos de mediana, pero compromete de inmediato el gasto cardíaco. Si utilizáramos una ventana de 60 segundos, una salva de TV de 3 segundos se diluiría en 57 segundos de ritmo normal y pasaría inadvertida. Por eso adoptamos una ventana de 10 segundos con una regla de prioridad para salvas de 3 o más latidos anormales. Asimismo, depuramos las anotaciones eliminando marcadores de calidad que generaban intervalos RR artificiales y descartamos el caso 1165 por un desalineamiento severo de reloj."
+> "El reto principal es el desbalance y la asimetría temporal. La fibrilación auricular dura minutos (mediana de 123 segundos), mientras una salva de taquicardia ventricular dura 2.7 segundos de mediana. Con una ventana de 60 segundos esa salva se diluiría; por eso usamos 10 segundos y una regla especial para salvas de 3 o más latidos. Además, Bloqueo AV viene de solo 9 pacientes y WAP/MAT de 23: esa escasez de pacientes marca el techo del modelo en esas clases."
 
 ---
 
-## Diapositiva 04: Estructura No Supervisada y Justificación del Enfoque (Eje 1)
-**Título:** ¿Es Viable el Agrupamiento No Supervisado? Análisis PCA y K-Means  
-**Eje Temático:** 1. El Problema y Contexto Clínico (Sección 3.3 Exploración No Supervisada)
+## Diapositiva 04: Estructura No Supervisada (Eje 1)
+**Título:** ¿Los ritmos forman grupos naturales? PCA y K-Means  
+**Eje Temático:** 1. El Problema y Contexto Clínico (Sección 3.3)
 
 ### Contenido de la Diapositiva
-- **Exploración No Supervisada (`figures/no_supervisado_pca.png`):**
-  - Preprocesamiento: Extracción de variables de señal, escalado con `RobustScaler` (resistente a outliers de electrocauterio), descomposición mediante PCA y agrupamiento con K-Means ($k=10$).
-  - Varianza explicada: Las dos primeras componentes principales retienen el **49% de la varianza total** (10 componentes alcanzan el 84%).
-- **Hallazgos Clave:**
-  - **Aislamiento Efectivo del Ruido:** El clúster 4 agrupó de forma casi pura **394 de las 419 ventanas de ruido**, demostrando que la degradación espectral y la entropía separan nítidamente el artefacto del tejido biológico.
-  - **Separación Macroscópica de Frecuencia y Regularidad:** PC1 y PC2 capturan gradientes de frecuencia cardíaca (bradicardias vs. taquicardias) y variabilidad del RR (ritmo regular vs. caótico como AFib).
-  - **Incapacidad para Discriminar Origen del Impulso:** Sin supervisión, los clústeres no logran distinguir entre Taquicardia Ventricular (origen ventricular, QRS ancho) y Taquicardia Supraventricular (origen auricular, QRS estrecho), ni detectar ondas P disociadas en Bloqueos AV.
-- **Conclusión Metodológica:**
-  - Se justifica plenamente la necesidad de un enfoque **supervisado** que combine ingeniería experta de características morfológicas (ancho QRS, correlación de plantillas, presencia de onda P) con modelos basados en árboles capaces de capturar fronteras de decisión no lineales complejas.
+- **Método (`figures/no_supervisado_pca.png`):** escalado robusto (`RobustScaler`, recorte a ±5), PCA y K-Means con k = 10.
+- **Varianza explicada:** las dos primeras componentes, **43 %**; hacen falta 10 para el **81 %**.
+- **Agrupación débil:** ARI 0.194 y silueta 0.127.
+- **Hallazgos:**
+  - **Ruido casi aislado:** el cluster 2 reúne **347 de las 419** ventanas de ruido.
+  - **Latidos ventriculares juntos:** Ectopia ventricular y TV comparten clusters (3 y 9).
+  - **AFib con SVTA** (cluster 4), y Bloqueo AV, WAP/MAT y Disfunción del nodo mezclados con Normal y AFib.
+- **Conclusión:** las clases no son grupos naturales completos; se justifica el aprendizaje supervisado con características de morfología.
+
+### Notas del Orador
+> "Antes del modelo supervisado preguntamos si los datos se separan solos. El ruido queda casi aislado, y los latidos ventriculares se agrupan por su forma ancha. Pero Bloqueo AV, WAP/MAT y Disfunción del nodo se mezclan con Normal y AFib. Esas mismas confusiones reaparecen después en el modelo supervisado: el análisis no supervisado las anticipó."
+
+---
+
+## Diapositiva 05: Preprocesamiento y Detector de Picos R (Eje 2)
+**Título:** Del ECG Crudo a los Picos R Detectados (Detector v2)  
+**Eje Temático:** 2. Metodología y Preprocesamiento (Secciones 3.2 y 3.4)
+
+### Contenido de la Diapositiva
+- **Sin picos anotados en inferencia:** `FUENTE_PICOS = "detectados"`. Las anotaciones de los médicos solo se usan para etiquetar.
+- **Filtrado:** Butterworth pasabanda 0.5–40 Hz aplicado hacia adelante y atrás (`sosfiltfilt`), sin desplazar los picos.
+- **Detector v2 (tipo Pan-Tompkins):**
+  1. Energía del QRS: banda 5–15 Hz, derivada al cuadrado y media móvil de unos 120 ms.
+  2. Umbral local: 30 % del máximo de la energía en 2 s alrededor, con un **piso del 20 % de la mediana** de las alturas de los máximos, que no se deja arrastrar por artefactos gigantes.
+  3. Periodo refractario de 200 ms y ajuste al máximo positivo cercano.
+- **Validación contra los picos anotados (482 casos, 5 min limpios por caso):**
+  - Mediana de sensibilidad **1.000** y de precisión **0.989**.
+  - Donde fallaba v1: sensibilidad en **TV de 0.50 a 0.75** y en Ectopia ventricular de 0.71 a 0.87.
+- **Ventanas:** **50,517** ventanas válidas de 10 s de 472 pacientes.
 
 ### Figura del Repositorio a Renderizar
-- `figures/no_supervisado_pca.png` (Espacio latente de las 2 primeras componentes principales coloreadas por ritmo real vs. clúster asignado).
+- `figures/eda_ecg_clinico.png` (ECG sobre papel milimetrado, 25 mm/s y 10 mm/mV).
 
 ### Notas del Orador
-> "Antes de construir modelos supervisados, nos preguntamos si la propia geometría de los datos separaba los ritmos. El análisis no supervisado con PCA y K-Means reveló una excelente noticia: el ruido y los artefactos de bisturí forman una nube completamente aislada, lo que garantiza que el sistema pueda descartar señales no interpretables. Sin embargo, para distinguir una TV de una SVTA, o un Bloqueo AV de una bradicardia sinusal, el agrupamiento no supervisado falla, porque ambas comparten frecuencias cardíacas similares. Esto valida nuestra hipótesis: se requiere aprendizaje supervisado enriquecido con descriptores morfológicos finos del complejo QRS y la onda P."
+> "Un error común es alimentar el modelo con los picos R que marcaron los médicos; en un monitor real esos picos no existen. Nuestro pipeline los detecta. El detector v2 usa un umbral local con un piso basado en la mediana, para que un artefacto enorme no lo deje ciego. Contra las anotaciones, la mediana de sensibilidad es 1.000 y la de precisión 0.989, y en taquicardia ventricular la sensibilidad subió de 0.50 a 0.75 frente a la primera versión."
 
 ---
 
-## Diapositiva 05: Metodología y Preprocesamiento de Señal (Eje 2)
-**Título:** Del ECG Crudo a la Detección QRS Adaptativa v2  
-**Eje Temático:** 2. Metodología y Preprocesamiento (Sección 3.2 y 3.4)
-
-### Contenido de la Diapositiva
-- **Condición Estricta de Inferencia en Tiempo Real:**
-  - `FUENTE_PICOS = "detectados"`: El modelo en ningún momento asume picos R anotados por médicos en inferencia. Todo latido debe ser descubierto autónomamente por el algoritmo a partir de la señal continua.
-- **Cadena de Filtrado Digital:**
-  - Filtro pasabanda Butterworth bidireccional en secciones de segundo orden (**SOS**) de **0.5 Hz a 40 Hz**.
-  - Supresión de deriva de línea base respiratoria (<0.5 Hz) y ruido de red eléctrica / armónicos musculares (>40 Hz), garantizando **fase cero** (cero distorsión morfológica en el tiempo).
-- **Detector QRS Adaptativo v2 (Resistente a Quirófano):**
-  1. *Filtro derivativo y pasabanda específico (5–15 Hz)*: Maximiza la pendiente pronunciada de la despolarización ventricular frente a ondas T picudas.
-  2. *Elevación al cuadrado e integración móvil (120 ms)*: Convierte la energía espectral en un pulso unipolar continuo.
-  3. *Umbral Adaptativo con Piso Robusto:* Implementación de un piso mínimo fijado en el **20% de la mediana de los máximos locales**.
-     - *Lección aprendida:* En la versión 1, cuando se activaba el electrobisturí (ej. caso 6069 con un pulso artefactual de **642 mV**), el umbral móvil se elevaba a cientos de milivoltios y el detector quedaba 'ciego' durante 8 segundos, perdiendo latidos reales. Con el piso robusto v2, el umbral se restablece de inmediato.
-  4. *Periodo refractario fisiológico de 200 ms* y filtro de pendiente para rechazar espículas de marcapasos o artefactos bifásicos.
-- **Validación del Detector:**
-  - Sensibilidad mediana de **0.996** y precisión mediana de **0.981** comparado contra las anotaciones gold-standard de cardiólogos.
-- **Ventaneo Operativo:**
-  - Extracción de **50,517 ventanas válidas de 10 segundos** a lo largo de 472 pacientes.
-
-### Notas del Orador
-> "Un modelo de machine learning en cardiología es tan bueno como su detector de picos R. Un error muy común en la literatura es alimentar el modelo con picos R anotados por humanos; eso es trampa clínica. Nuestro pipeline opera con la bandera 'detectados'. Diseñamos un detector Pan-Tompkins mejorado que denominamos v2. Su innovación clave es un umbral adaptativo con un piso robusto del 20% de la mediana de picos. En quirófano, un electrobisturí genera picos de hasta 642 milivoltios. Los detectores convencionales elevan su umbral a ese nivel y se vuelven ciegos durante varios segundos. Nuestro detector v2 asimila el artefacto y recupera la detección fisiológica en menos de 200 milisegundos, logrando un 99.6% de sensibilidad."
-
----
-
-## Diapositiva 06: Ingeniería de Características y Manejo de MNAR (Eje 2)
-**Título:** Espacio de 45 Características: Ritmo, Morfología, Ruido e Imputación No Aleatoria  
+## Diapositiva 06: Características y Manejo de Faltantes (Eje 2)
+**Título:** 45 Características: Ritmo, Calidad de Señal, Morfología e Indicador de Faltantes  
 **Eje Temático:** 2. Metodología y Preprocesamiento (Sección 3.4)
 
 ### Contenido de la Diapositiva
-- **Distribución de las 45 Características Extraídas:**
-  - **22 de Ritmo y Variabilidad RR (VFC):**
-    - Métricas temporales: `fc_media`, `fc_pico`, `fc_min`, `rr_mediana`, `sdnn`, `rmssd`, `pnn50`, `cv_rr`.
-    - Métricas geométricas y no lineales: Diagrama de Poincaré (`sd1`, `sd2`, `sd1_sd2_ratio`), `tpr` (Turning Point Ratio).
-    - *Depuración:* Eliminación de entropía muestral (`sampen`), la cual generaba un **62% de valores nulos** en ventanas cortas de 10 s donde los latidos eran escasos.
-  - **9 de Calidad de Señal y Ruido:**
-    - `sig_sqi_qrs` (índice de calidad QRS basado en skewness y kurtosis).
-    - `sig_ruido_alto` (potencia en la banda de 40–100 Hz, diseñada específicamente para capturar la interferencia del electrocauterio).
-    - `sig_deriva` (bajas frecuencias <0.5 Hz), `sig_frac_plana` ($\ge 100\text{ ms}$ de saturación a cero) y `sig_frac_repetidas` (saturación de conversor ADC).
-  - **13 de Morfología P-QRS-T:**
-    - `qrs_ancho_med`, `qrs_ancho_max` (diferenciación de latidos ectópicos y TV vs SVTA).
-    - `corr_plantilla_med`, `frac_latidos_atipicos` (correlación cruzada contra el latido promedio de la ventana).
-    - `p_presente_frac`, `pr_intervalo`, `p_sin_qrs` (detección de onda P mediante correlación de plantilla en ventanas pre-QRS y en pausas diastólicas).
-  - **1 Variable de Ausencia No Aleatoria (MNAR):**
-    - Flag binario `sin_rr_valido`: Activo cuando la ventana contiene menos de 4 latidos válidos (imposible calcular VFC fiable).
-- **Manejo Clínico de Faltantes (MNAR vs. Imputación Típica):**
-  - La ausencia de latidos en quirófano **no ocurre al azar**: ocurre por asistolia, desconexión de electrodos o ruido saturante masivo.
-  - Si se imputa con la mediana (estrategia ingenua de scikit-learn), una ventana de ruido o paro se maquilla como un ritmo normal de 75 lpm con variabilidad perfecta, confundiendo al clasificador.
-  - Se implementó **imputación explícita fuera de rango (`-1.0`)** acoplada a la variable `sin_rr_valido = 1`.
-- **Estandarización:** Inclusión de `StandardScaler` en pipelines para algoritmos dependientes de distancias (Regresión Logística y SVM).
+- **22 de ritmo (RR):** `fc_media`, `fc_pico`, `rr_mediana`, `sdnn`, `rmssd`, `pnn50`, `pnn20`, `cv_rr`, Poincaré (`sd1`, `sd2`, `sd1_sd2`), `tpr`, entre otras. Se eliminó la entropía muestral.
+- **9 de calidad de señal:** `sig_sqi_qrs` (fracción de energía en la banda del QRS, 5–15 Hz), `sig_ruido_alto` (fracción en 40–100 Hz: electrobisturí, EMG), `sig_deriva`, `sig_frac_plana` (tramos planos ≥100 ms) y `sig_frac_repetidas`.
+- **13 de morfología:** `qrs_ancho_med`, `qrs_ancho_max`, `corr_plantilla_med`, `corr_plantilla_min`, `frac_latidos_atipicos`, `p_presente_frac`, `pr_intervalo`, `p_corr_med`, `p_sin_qrs`, `t_amp_rel`, entre otras.
+- **1 indicador:** `sin_rr_valido`, activo cuando la ventana tiene menos de 4 picos y no se puede calcular el ritmo.
+- **Faltantes no aleatorios:** faltan latidos por ruido, desconexión o pausas. La mediana le inventaría a esas ventanas un ritmo "típico"; se imputa con **−1** (fuera de rango) junto con el indicador.
+- **Escalado:** `StandardScaler` solo para regresión logística y SVM.
 
 ### Notas del Orador
-> "Construimos un vector de 45 características clínicamente fundamentadas. Pero el aporte conceptual más relevante del preprocesamiento fue resolver el problema de datos faltantes no aleatorios (MNAR). Cuando en una ventana de 10 segundos hay menos de 4 latidos, es imposible calcular métricas como el RMSSD o el SDNN. Si uno utiliza una imputación por la mediana, el sistema reemplaza los nulos por un ritmo sinusal perfecto de 75 latidos por minuto, ocultando un artefacto masivo o una pausa sinusal severa. Por ello, diseñamos la variable indicadora 'sin_rr_valido' e imputamos las métricas de ritmo con el valor centinela -1.0. Esto le enseña explícitamente al árbol de decisión que la ausencia de ritmo es, en sí misma, una señal patológica o de ruido."
+> "Construimos 45 características con sentido clínico. Un punto clave fue el tratamiento de faltantes: cuando una ventana tiene menos de 4 latidos no se puede medir el ritmo, y eso no ocurre al azar. Imputar con la mediana haría parecer normal una ventana de ruido o una pausa. Por eso usamos un valor fijo fuera de rango y una variable indicadora. En la ablación, volver a la mediana baja el F1 de 0.539 a 0.531."
 
 ---
 
-## Diapositiva 07: Selección de Modelos y Benchmark de Familias (Eje 3)
-**Título:** Partición Estricta por Paciente y Comparación de Familias de Modelos  
+## Diapositiva 07: Selección de Modelos (Eje 3)
+**Título:** Partición por Paciente y Comparación de Familias  
 **Eje Temático:** 3. Selección del Modelo y de sus Parámetros (Sección 3.5)
 
 ### Contenido de la Diapositiva
-- **Protocolo de Validación Riguroso:**
-  - `StratifiedGroupKFold` agrupado estrictamente por **`subjectid`** (5 pliegues fijos guardados en `data/pliegues_pacientes.csv`).
-  - Ningún paciente del conjunto de entrenamiento aparece en validación ni en test.
-  - **Tope de Entrenamiento (`MAX_POR_CLASE = 5000`):** Aplicado **exclusivamente al conjunto de entrenamiento** para evitar tiempos de cómputo inmanejables y mitigar el sesgo hacia las clases mayoritarias. La validación y el test retienen el 100% de la distribución epidemiológica real.
-- **Tabla Comparativa de Modelos Base (Validación Interna por Paciente):**
+- **Protocolo:**
+  - `StratifiedGroupKFold` por **`subjectid`**, 5 pliegues fijos guardados en `data/pliegues_pacientes.csv`. El pliegue 0 es el test fijo (93 pacientes).
+  - **Tope de 5,000 ventanas por clase solo al entrenar.** Validación y test conservan la distribución real.
+- **Comparación con hiperparámetros por defecto (validación interna por paciente):**
 
-| Familia de Modelo | Configuración | F1 Macro Val | Train F1 | Bal. Acc Val | Exactitud Val | Tiempo Entrenamiento | Diagnóstico Operativo |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Línea Base Trivial** | Predicción mayoritaria (Normal) | **0.077** | 0.077 | 0.100 | 0.617 | < 0.1 s | Colapso total en clases minoritarias. `[PENDIENTE: agregar resultado exacto de Dummy estratificado y nota de empate tras tope, bloque G1]` |
-| **Regresión Logística** | L2, `class_weight='balanced'`, StandardScaler | **0.426 ± 0.025** | 0.653 | 0.598 | 0.683 | 5.3 s | Rápida pero linealmente insuficiente para interacciones ritmo-morfología. |
-| **SVM (RBF Kernel)** | Radial Basis Function, StandardScaler | **0.460 ± 0.040** | 0.803 | 0.604 | 0.753 | 169.1 s | Fronteras no lineales mejores, pero escala cuadrática en cómputo. |
-| **Random Forest** | 100 árboles, `max_depth=None` | **0.509 ± 0.033** | 1.000 | 0.509 | 0.879 | 10.1 s | Memorización absoluta en train (sobreajuste), degradación en generalización. |
-| **HistGradientBoosting** | Histogram-based GBDT (255 bins), defecto | **0.528 ± 0.017** | 0.983 | 0.585 | 0.866 | 23.2 s | **Ganador en F1 y estabilidad.** Manejo nativo de interacciones no lineales. |
+| Modelo | Configuración | F1 macro val | F1 train | Exactitud bal. val | Exactitud val | Tiempo |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| Línea base trivial | Siempre Normal | 0.077 | | 0.100 | 0.62 | |
+| Línea base aleatoria | `DummyClassifier(strategy="stratified")` | 0.091 ± 0.004 | | | | |
+| Regresión logística | L2, `class_weight="balanced"`, StandardScaler | 0.426 ± 0.025 | 0.653 | 0.598 | 0.683 | 9 s |
+| SVM RBF | `class_weight="balanced"`, StandardScaler | 0.460 ± 0.040 | 0.803 | 0.604 | 0.753 | 298 s |
+| Random Forest | 300 árboles, `class_weight="balanced_subsample"` | 0.509 ± 0.033 | 1.000 | 0.509 | 0.879 | 16 s |
+| HistGradientBoosting | `class_weight="balanced"` | **0.528 ± 0.017** | 0.983 | 0.585 | 0.866 | 41 s |
 
-- **Elección de la Familia:** HistGradientBoosting ofreció la mejor generalización inter-paciente, robustez ante outliers e inferencia ultrarrápida.
+- **Búsqueda aleatoria por paciente:** Random Forest sube a 0.528 y HistGradientBoosting a **0.534**, que queda como modelo base (v2).
+- XGBoost, LightGBM y SVM afinados se prueban después como experimento F9 (diapositiva 08).
 
 ### Notas del Orador
-> "Para seleccionar el modelo, establecimos una regla inquebrantable: ningún paciente de entrenamiento puede filtrarse en validación. Comparamos cuatro familias frente a una línea base trivial. La regresión logística quedó limitada en un F1 macro de 0.426. Las máquinas de soporte vectorial alcanzaron 0.460, pero su coste computacional es prohibitivo. Random Forest sufrió de memorización pura en entrenamiento (F1 de 1.000 en train, cayendo a 0.509 en validación). HistGradientBoosting superó a todos con 0.528 de F1 macro con hiperparámetros por defecto. Su discretización en 255 histogramas proporciona una regularización natural excelente contra el ruido intraoperatorio."
+> "La regla fue que ningún paciente de entrenamiento aparezca en validación ni en test. Con hiperparámetros por defecto, HistGradientBoosting fue el mejor con 0.528, frente a 0.077 de predecir siempre Normal y 0.091 de predecir al azar. Random Forest memoriza el entrenamiento, con F1 de 1.000 en train y 0.509 en validación. Tras afinar, HistGradientBoosting llegó a 0.534 y quedó como base para los experimentos."
 
 ---
 
-## Diapositiva 08: Optimización, Ablación y Experimentos (Eje 3)
-**Título:** Optimización de Hiperparámetros, Estudio de Ablación y Bloque F  
-**Eje Temático:** 3. Selección del Modelo y de sus Parámetros (Sección 3.5 y Experimentos F)
+## Diapositiva 08: Ablación y Experimentos (Eje 3)
+**Título:** Qué Aporta Cada Decisión y Qué se Probó para Mejorar  
+**Eje Temático:** 3. Selección del Modelo y de sus Parámetros (Sección 3.5)
 
 ### Contenido de la Diapositiva
-- **Optimización de Hiperparámetros (Búsqueda Agrupada por Paciente):**
-  - *Random Forest afinado:* F1 macro subió a **0.528** (369 s; `max_depth=12`, `max_features=0.5`, `min_samples_leaf=1`, `n_estimators=249`).
-  - *HistGradientBoosting afinado (Modelo Ganador):* F1 macro alcanzó **0.534** (112 s; `learning_rate=0.0669`, `max_iter=364`, `max_leaf_nodes=18`, `min_samples_leaf=33`, `l2_regularization=0.244`).
-- **Estudio de Ablación (`figures/registro_correcciones.png`):**
-  - ¿Qué aporta realmente cada componente del pipeline?
-    - **Pipeline v2 Completo:** F1 macro = **0.539** (validación interna).
-    - **Sin Características Morfológicas (solo Ritmo y SQI):** El F1 macro colapsa a **0.458 (caída drástica de −0.081)**. Demuestra empíricamente que el ritmo por sí solo no puede discriminar arritmias ventriculares de supraventriculares.
-    - **Con Detector QRS v1:** F1 macro baja a **0.526** (ceguera transitoria en electrobisturí).
-    - **Con Imputación por Mediana:** F1 macro baja a **0.531** (confusión en episodios de paro/ruido).
-    - **Trampa de Picos Anotados:** F1 macro sube artificialmente a **0.588** (Ruido obtiene F1 = 0.994 falso porque las pausas de ruido venían sin latidos anotados).
-- **Protocolo de Experimentos Adicionales (Bloque F):**
-  - *Regla de Adopción Clínica:* Para sustituir al modelo de referencia, cualquier mejora debe: (1) Superar al baseline en al menos $+0.005$ en `cv_externa`, (2) Ganar en al menos 4 de los 5 pliegues por paciente, y (3) No reducir en más de $0.02$ el recall de Taquicardia Ventricular, Bloqueo AV ni Fibrilación Auricular.
-  - *Evaluación de Experimentos F1 a F10:* Ventanas deslizantes (F1), Prioridad clínica (F2), SMOTE/Aumento de señal (F3), Tamaño de ventana (F4), Poda por colinealidad $|\rho|>0.85$ (F5), Filtro previo de ruido (F6), Esquema en 2 etapas (F7), Calibración de umbrales F8, Búsqueda ampliada SVM/XGBoost/LightGBM F9, y Entrenamiento sin tope F10.
-  - `[PENDIENTE: resultados definitivos de experimentos Bloque F y tabla G2]`
+- **Ablación (validación interna, `figures/registro_correcciones.png`):**
+  - Pipeline v2 completo: **0.539**.
+  - **Sin morfología: 0.458 (−0.081).** Es la mayor mejora del proyecto.
+  - Detector de v1: 0.523. Imputación con mediana: 0.531. Agrupando por cirugía: 0.532.
+  - Picos anotados: 0.586, pero es un atajo: Ruido sube a 0.994 porque las ventanas de ruido no tienen latidos anotados.
+- **Regla de adopción, fijada antes de ver resultados** (validación cruzada externa, 5 pliegues):
+  1. ΔF1 macro ≥ 0.005;
+  2. mejora en al menos 4 de 5 pliegues;
+  3. no baja más de 0.02 el recall de TV, Bloqueo AV ni AFib.
+- **18 variantes probadas (tabla G2, `models/registro_experimentos.csv`), resumen:**
 
-### Figura del Repositorio a Renderizar
-- `figures/registro_correcciones.png` (Evolución de métricas y estudio de ablación en validación interna).
+| Variante | F1 macro | ΔF1 | Pliegues que mejoran | Recall TV | Recall Bloqueo AV | Decisión |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| Base v2 (HistGradientBoosting) | 0.534 | | | 0.653 | 0.112 | Referencia |
+| **F9 XGBoost afinado** | **0.545** | **+0.011** | **5** | **0.653** | **0.112** | **Adoptado (v3)** |
+| F3b Aumento sobre la señal | 0.559 | +0.025 | 4 | 0.583 | 0.093 | Baja recall de TV |
+| F11 XGBoost + aumento de señal | 0.554 | +0.020 | 5 | 0.607 | 0.093 | Baja recall de TV y Bloqueo AV |
+| F3a SMOTE | 0.552 | +0.018 | 5 | 0.649 | 0.073 | Baja recall de Bloqueo AV |
+| F9 LightGBM afinado | 0.552 | +0.018 | 4 | 0.599 | 0.071 | Baja recall de TV y Bloqueo AV |
+| F8b Pesos por clase para F1 | 0.552 | +0.018 | 4 | 0.483 | 0.110 | Baja recall de TV |
+| F8a Umbrales para recall | 0.525 | −0.009 | 1 | 0.640 | 0.267 | Bloqueo AV sube, pero su precisión cae y los umbrales son inestables |
+| F10 Sin tope por clase | 0.537 | +0.003 | 4 | 0.640 | 0.108 | No alcanza el mínimo |
+| F5 Sin redundantes | 0.535 | +0.001 | 2 | 0.657 | 0.103 | Sin mejora |
+| F1 Ventanas deslizantes | 0.531 | −0.003 | 1 | 0.727 | 0.100 | Sin mejora; el paso de 2 s se usa en la demo |
+| F4 Ventana de 20 s | 0.576 | +0.043 | 5 | 0.656 | 0.184 | Otro problema (más latencia); trabajo futuro |
+| F9 SVM afinado | 0.487 | −0.047 | 0 | 0.554 | 0.105 | Peor en todos los pliegues |
+
+- **XGBoost (v3):** 432 árboles, `max_depth=8`, `learning_rate≈0.038`, `subsample≈0.77`, `colsample_bytree≈0.86`, `min_child_weight=7`, `reg_lambda≈1.6`, con pesos balanceados por clase (`XGBBalanceado`).
+
+### Figuras del Repositorio a Renderizar
+- `figures/registro_correcciones.png` y `figures/exp_resumen.png`.
 
 ### Notas del Orador
-> "Ajustamos los hiperparámetros de HistGradientBoosting mediante búsqueda aleatoria restringida por paciente, alcanzando 0.534 de F1 macro con mayor profundidad y regularización L2. Pero el experimento más revelador fue la ablación: retiramos las 13 características morfológicas y el F1 macro se desplomó en casi 10 puntos a 0.458. Esto prueba que el conocimiento médico de la onda P y el ancho QRS es el núcleo del rendimiento del sistema. Adicionalmente, establecimos un protocolo riguroso en el Bloque F para evaluar 10 variantes adicionales sin caer en sobreajuste metodológico."
+> "La ablación muestra que lo que más aporta es el conocimiento del dominio: sin las 13 características de morfología el F1 cae de 0.539 a 0.458. Después probamos 18 variantes con una regla fijada de antemano. Varias subían el F1, como el aumento de datos o LightGBM, pero lo hacían perdiendo taquicardias ventriculares o bloqueos. Solo XGBoost cumplió la regla: +0.011, mejora en los 5 pliegues y ningún recall peligroso baja. Es una mejora real pero modesta. Como comparamos 18 variantes sobre los mismos pliegues, la mejor tiende a ser algo optimista."
 
 ---
 
-## Diapositiva 09: Generalización del Modelo y Validación Cruzada (Eje 4)
-**Título:** Validación Cruzada Externa y Desempeño en Test Ciego  
+## Diapositiva 09: Generalización (Eje 4)
+**Título:** Validación Cruzada Externa y Test Fijo por Paciente  
 **Eje Temático:** 4. Generalización del Modelo (Sección 3.6)
 
 ### Contenido de la Diapositiva
-- **Validación Cruzada Externa (5 Pliegues por Paciente, 50,517 Ventanas):**
-  - **F1 Macro Promedio:** **$0.534 \pm 0.019$**
-  - Consistencia pliegue a pliegue (`figures/eval_cv_externa.png`):
-    - Pliegue 0: **0.526**
-    - Pliegue 1: **0.519**
-    - Pliegue 2: **0.544**
-    - Pliegue 3: **0.562**
-    - Pliegue 4: **0.519**
-  - Dispersión sumamente baja ($\sigma = 0.019$), indicando que el modelo no depende de la partición particular de pacientes.
-- **Evaluación en Conjunto de Test Ciego Fijo (Pliegue 0):**
-  - **93 pacientes completamente nuevos**, **9,950 ventanas independientes**.
-  - **F1 Macro en Test:** **0.526**
-  - **Intervalo de Confianza del 95% (Bootstrap a nivel de Paciente, $B=1000$):** **$[0.458, 0.558]$**
-  - *Interpretación Estadística:* El límite inferior de 0.458 asegura un rendimiento muy superior al azar o a modelos lineales incluso en el peor escenario de variabilidad biológica inter-sujeto.
-- **Exactitud Global:** **0.844 en CV Externa** y **0.824 en Test Ciego**.
-- **Exactitud Balanceada:** **0.616 en CV Externa** y **0.601 en Test Ciego**.
+- **Validación cruzada externa** (cada pliegue hace de test una vez, 50,517 ventanas):
+
+| | Pliegue 0 | Pliegue 1 | Pliegue 2 | Pliegue 3 | Pliegue 4 | Media ± desv. |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| v2 (HistGradientBoosting) | 0.526 | 0.519 | 0.544 | 0.562 | 0.519 | 0.534 ± 0.019 |
+| **v3 (XGBoost)** | **0.541** | **0.531** | **0.555** | **0.564** | **0.535** | **0.545 ± 0.014** |
+
+- **Test fijo (pliegue 0): 93 pacientes nuevos, 9,950 ventanas, distribución real:**
+  - **F1 macro 0.541** (v2: 0.526).
+  - **IC95 % por bootstrap de pacientes (300 remuestreos): [0.474, 0.573].**
+  - Exactitud balanceada 0.611, MCC 0.734, exactitud 0.842.
+- **Advertencia:** el test fijo ya se usó para evaluar v2 y forma parte de la validación externa con la que se eligió v3; para v3 no es un test virgen y la estimación puede ser levemente optimista.
 
 ### Figura del Repositorio a Renderizar
-- `figures/eval_cv_externa.png` (Desempeño y estabilidad del F1 macro a través de los 5 pliegues de validación cruzada).
+- `figures/eval_final_confusion.png` (v3, validación externa, recall por clase).
 
 ### Notas del Orador
-> "En machine learning médico, la prueba de fuego es evaluar sobre pacientes que el algoritmo jamás ha visto. En nuestra validación cruzada externa de 5 pliegues sobre más de 50,000 ventanas, el F1 macro se situó en 0.534 con una desviación de solo 0.019. Al congelar el Pliegue 0 como conjunto de prueba ciego independiente —con 93 pacientes nuevos y casi 10,000 ventanas— el F1 macro fue de 0.526. Calculamos intervalos de confianza al 95% mediante remuestreo bootstrap a nivel de paciente, obteniendo un rango entre 0.458 y 0.558. La exactitud global se mantiene en el 82.4%, respaldando una sólida capacidad de generalización."
+> "Evaluamos siempre con pacientes que el modelo no vio. En la validación cruzada externa, el modelo final logra 0.545 con una desviación de 0.014, y mejora a la base en los 5 pliegues. En el test fijo de 93 pacientes nuevos obtiene 0.541, con un intervalo de confianza del 95 % entre 0.474 y 0.573. Somos explícitos con una limitación: ese test ya se había usado, así que para la versión final no es completamente virgen."
 
 ---
 
-## Diapositiva 10: Demostración Empírica Anti-Leakage (Eje 4)
-**Título:** Control Estricto de Fuga de Datos (Data Leakage) y Curvas de Aprendizaje  
-**Eje Temático:** 4. Generalización del Modelo (Sección 3.6 Data Leakage)
+## Diapositiva 10: Fuga de Datos y Curva de Aprendizaje (Eje 4)
+**Título:** Por qué la Partición por Paciente es Indispensable  
+**Eje Temático:** 4. Generalización del Modelo (Sección 3.6)
 
 ### Contenido de la Diapositiva
-- **El Gran Peligro Metodológico en Biosignales: Fuga de Datos por Paciente:**
-  - Realizamos un experimento controlado comparando la partición aleatoria por ventana vs. la partición agrupada por paciente (`subjectid`):
+- **Validación aleatoria por ventana vs. agrupada por paciente (modelo v3):**
 
-| Estrategia de Partición | F1 Macro Obtenido | Fuga de Información | Causa Metodológica |
-| :--- | :---: | :---: | :--- |
-| **Partición Aleatoria (por Ventana)** | **$0.763 \pm 0.015$** | **Severa (+0.229 inflado)** | El modelo memoriza el voltaje basal, eje cardíaco y morfología propia del paciente presente en train y test. |
-| **Partición Agrupada (por `subjectid`)** | **$0.534 \pm 0.008$** | **Ninguna (Realista)** | Evalúa verdadera generalización fisiológica a nuevos individuos. |
+| Partición | F1 macro | Diferencia |
+| :--- | :---: | :---: |
+| Aleatoria por ventana (incorrecta) | 0.792 ± 0.010 | **+0.258 inflado** |
+| Agrupada por `subjectid` (correcta) | 0.534 ± 0.026 | Referencia |
 
-- **Fuga Sutil por Casos Quirúrgicos (`case_id` vs. `subjectid`):**
-  - Identificamos que **8 pacientes tuvieron múltiples intervenciones quirúrgicas** en VitalDB. Agrupar por `case_id` en lugar de `subjectid` filtraba cirugías del mismo paciente en train y test. Se corrigió forzando la agrupación por `subjectid`.
-- **Test de Sanidad con Etiquetas Barajadas (Permutación de $y$):**
-  - Al destruir la relación entre $X$ e $y$, el F1 macro cayó inmediatamente a **$0.057 \pm 0.006$** (concordante con el azar esperado $1/10$), certificando la ausencia de fuga técnica o bugs en el preprocesamiento.
-- **Análisis de la Brecha Train vs. Test (`figures/gen_curva_aprendizaje.png`):**
-  - Brecha de entrenamiento (Train F1 = 0.963 vs. Test F1 = 0.526):
-  - *Diagnóstico Clínico:* La brecha no proviene de sobreajuste en las clases mayoritarias, sino de la variabilidad morfológica extrema en patologías con muy baja prevalencia de pacientes: Bloqueo AV (9 pacientes en todo el dataset) y WAP/MAT (23 pacientes).
-
-### Figura del Repositorio a Renderizar
-- `figures/gen_curva_aprendizaje.png` (Curva de aprendizaje mostrando la evolución de Train vs. Validación por paciente).
+- **Cirugías del mismo paciente:** 8 pacientes tienen varias cirugías; por eso se agrupa por `subjectid` y no por `case_id`.
+- **Etiquetas barajadas:** el F1 cae a **0.096 ± 0.001**, el nivel del azar para 10 clases. No hay fuga ni estructura espuria.
+- **Brecha:** F1 en train 0.981 frente a 0.535 en validación interna y 0.541 en test. El modelo memoriza el entrenamiento, pero validación y test coinciden.
+- **Curva de aprendizaje (`figures/gen_curva_aprendizaje.png`):** la validación sube de 0.50 (unas 3,000 ventanas) a 0.53 (14,800). Más ventanas de los mismos pacientes ayudan poco; el límite son los pacientes de las clases raras.
 
 ### Notas del Orador
-> "Uno de los hallazgos metodológicos más contundentes del proyecto fue la demostración empírica de fuga de datos. Si dividiéramos los datos de manera aleatoria por ventanas de 10 segundos, nuestro F1 macro se inflaría artificialmente a 0.763. Esto es una trampa: el modelo no aprende a diagnosticar la arritmia, sino que memoriza el 'código de barras' morfológico del paciente, presente en su ventana del minuto 10 y evaluado en la del minuto 12. Al forzar la separación estricta por 'subjectid', el modelo obtiene su rendimiento real de 0.534. Asimismo, el test de permutación con etiquetas barajadas colapsó a 0.057, garantizando la total transparencia metodológica."
+> "Si dividiéramos las ventanas al azar, el F1 sería 0.792: el modelo reconocería al paciente, no la arritmia, porque vería ventanas del mismo paciente en entrenamiento y en prueba. Separando por paciente, el valor real es 0.534. Con etiquetas barajadas cae a 0.096, el azar, lo que confirma que no hay fuga. Y la curva de aprendizaje muestra que más ventanas de los mismos pacientes casi no ayudan: lo que falta son más pacientes de las clases raras."
 
 ---
 
-## Diapositiva 11: Desempeño Multiclase e Interpretabilidad (Eje 5)
-**Título:** Desempeño por Clase: Sensibilidad Clínica vs. Falsas Alarmas  
+## Diapositiva 11: Desempeño por Clase (Eje 5)
+**Título:** Desempeño por Clase y Comparación con los Autores  
 **Eje Temático:** 5. Métricas de Desempeño e Interpretabilidad (Sección 3.7)
 
 ### Contenido de la Diapositiva
-- **Por qué la Exactitud Global es Engañosa:**
-  - En un entorno donde `Normal` y `AFib` representan >85% del quirófano, un modelo inútil que prediga siempre sinusal obtendría 61.7% de exactitud.
-  - Se priorizan: **F1 macro** (0.534 en CV, 0.526 en test), **Exactitud balanceada** (0.616 en CV, 0.601 en test), **MCC** (0.710 en test) y el **Recall en arritmias de riesgo vital**.
-- **Desempeño Detallado por Clase (CV Externa 50,517 ventanas vs. Test Fijo 9,950 ventanas):**
+- **Por qué no la exactitud:** predecir siempre Normal acertaría el 62 % de las ventanas sin alertar nunca. Se priorizan F1 macro, exactitud balanceada, MCC, PR-AUC y el recall de las arritmias peligrosas.
+- **Modelo v3 por clase (validación externa, 50,517 ventanas; y test fijo):**
 
-| Clase de Ritmo | F1 CV Ext. | Recall CV | Precisión CV | F1 Test Ciego | Prioridad Clínica y Comportamiento Operativo |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **Fibrilación Auricular (AFib)** | **0.947** | 0.943 | 0.952 | **0.930** | Excelente detección de caos RR y ausencia de onda P. |
-| **Ritmo Normal** | **0.912** | 0.876 | 0.951 | **0.909** | Alta especificidad; preserva la tranquilidad del quirófano. |
-| **Ectopia Ventricular** | **0.736** | 0.846 | 0.651 | **0.850** | Alta captura de extrasístoles ventriculares y bigeminismo. |
-| **Ruido / Artefacto** | **0.663** | 0.900 | 0.525 | **0.693** | **Recall 90%**: Gran capacidad de silenciar ventanas no legibles. |
-| **Ectopia Auricular** | **0.644** | 0.740 | 0.569 | **0.589** | Identificación de latidos prematuros con QRS normal. |
-| **SVTA (Taquicardia Supravent.)**| **0.442** | 0.597 | 0.351 | **0.562** | Test Recall = 0.852. Buena captura de aceleraciones sinusales. |
-| **TV (Taquicardia Ventricular)**| **0.384** | **0.653** | 0.272 | **0.423** | **Emergencia Crítica: Recall 0.653 (CV) y 0.617 (Test)**. Se prioriza sensibilidad sobre precisión para salvar vidas. |
-| **Disfunción Nodo Sinusal** | **0.374** | 0.445 | 0.322 | **0.277** | Pausas sinusales y bradicardias extremas variables. |
-| **Bloqueo AV** | **0.115** | 0.147 | 0.094 | **0.000** | Escasez extrema (9 pacientes totales, solo 1 en test con 117 vent; pliegue 2 tuvo 0.34). |
-| **WAP / MAT** | **0.045** | 0.048 | 0.043 | **0.021** | Requiere diferenciar $\ge 3$ ondas P sutiles; límite físico de una sola derivación DII. |
+| Clase | F1 CV | Recall CV | Precisión CV | F1 test |
+| :--- | :---: | :---: | :---: | :---: |
+| AFib | 0.951 | 0.951 | 0.952 | 0.941 |
+| Normal | 0.922 | 0.896 | 0.949 | 0.921 |
+| Ectopia ventricular | 0.746 | 0.858 | 0.659 | 0.847 |
+| Ruido | 0.666 | 0.902 | 0.528 | 0.722 |
+| Ectopia auricular | 0.654 | 0.743 | 0.584 | 0.617 |
+| SVTA | 0.468 | 0.590 | 0.388 | 0.632 |
+| **TV** | **0.404** | **0.653** | **0.292** | **0.440** |
+| Disfunción del nodo | 0.381 | 0.411 | 0.356 | 0.269 |
+| Bloqueo AV | 0.121 | 0.112 | 0.131 | 0.000 |
+| WAP/MAT | 0.050 | 0.045 | 0.057 | 0.025 |
 
-- *Comparación con Autores de VitalDB (CNN 1D Binaria Normal vs Anormal):* `[PENDIENTE: métricas exactas de agrupación binaria del bloque G9]`.
+- **TV:** detecta dos de cada tres episodios, pero con más de 2 falsas alarmas por acierto (precisión 0.29).
+- **Bloqueo AV en test = 0:** el test tiene un solo paciente con Bloqueo AV (117 ventanas). Entre pliegues, el F1 de v2 en esta clase va de 0.00 a 0.34.
+- **Comparación con los autores (G9).** Se agrupan las predicciones en normal y anormal (sin Ruido, 50,098 ventanas). No es directamente comparable: ellos resuelven un problema binario con una CNN 1D sobre 5 s.
 
-### Figuras del Repositorio a Renderizar
-- `figures/eval_confusion.png` (Matriz de confusión normalizada en validación cruzada externa).
-- `figures/eval_pr.png` (Curvas Precisión-Recall multiclase).
-
-### Notas del Orador
-> "Al desagregar el desempeño clase a clase, observamos una correspondencia clínica fascinante. En Fibrilación Auricular y Ritmo Normal alcanzamos F1 superiores a 0.91 y 0.94. En Ruido, logramos un recall del 90%, garantizando que los artefactos no se confundan con arritmias mortales. En Taquicardia Ventricular, el F1 es 0.384 con una precisión de 0.272, pero un Recall de 0.653. En anestesia, este compromiso es el deseado: preferimos que el anestesiólogo reciba una alerta preventiva para mirar el monitor ante una posible TV, a que el modelo calle por buscar precisión matemática y pase por alto un evento letal. El Bloqueo AV y WAP/MAT reflejan los límites del dataset: solo 9 pacientes en Bloqueo AV y la imposibilidad de ver múltiples morfologías de onda P en una sola derivación."
-
----
-
-## Diapositiva 12: Explicabilidad y Coherencia Electrofisiológica (Eje 5)
-**Título:** Interpretabilidad Global y SHAP: Validación de la Lógica del Modelo  
-**Eje Temático:** 5. Métricas de Desempeño e Interpretabilidad (Sección 3.7 Explicabilidad)
-
-### Contenido de la Diapositiva
-- **Importancia por Permutación (`figures/explic_permutacion.png`):**
-  - Las variables líderes que gobiernan la toma de decisiones son fisiológicamente coherentes:
-    1. `sig_ruido_alto` y `sig_sqi_qrs`: Determinan si la señal es médicamente analizable o si debe etiquetarse como `Ruido`.
-    2. `rr_mediana`, `fc_media` y `sdnn`: Separan ritmos acelerados (TV/SVTA) de ritmos pausados o bradicárquicos.
-    3. `frac_latidos_atipicos` y `qrs_ancho_max`: Discrimina origen ventricular vs. auricular.
-- **Valores SHAP Multiclase (`figures/explic_shap_global.png`):**
-  - **Fibrilación Auricular:** SHAP asigna alta densidad a valores elevados de `sd1`, `rmssd` y `cv_rr` (caos diastólico) acoplados con valores mínimos de `p_presente_frac` (ausencia de contracción auricular organizada).
-  - **Taquicardia Ventricular:** Fuerte contribución de `qrs_ancho_max` elevado ($>120\text{ ms}$), correlación baja con plantilla normal y `fc_media` $>120\text{ lpm}$.
-  - **Ruido:** Predominio absoluto de potencia en 40–100 Hz (`sig_ruido_alto`) y caída de `sig_sqi_qrs`.
-  - **Ectopias Auriculares:** Caída transitoria del intervalo RR (`tpr` alto) pero con `qrs_ancho_med` dentro de límites normales.
-  - `[PENDIENTE: síntesis de interpretación individual de las 10 clases en SHAP del bloque G7]`
+| | Autores (CNN 1D, 5 s, binario) | Este proyecto (v3, 10 s, 10 clases agrupadas) |
+| :--- | :---: | :---: |
+| F1 | 0.910 | 0.878 |
+| Sensibilidad | 0.848 | 0.919 |
+| Especificidad | 0.988 | 0.896 |
+| AUROC | 0.990 | 0.968 |
 
 ### Figuras del Repositorio a Renderizar
-- `figures/explic_permutacion.png` (Top de características por importancia de permutación).
-- `figures/explic_shap_global.png` (Resumen SHAP beeswarm multiclase).
+- `figures/eval_final_confusion.png` y `figures/eval_pr.png`.
 
 ### Notas del Orador
-> "Para que un anestesiólogo confíe en un modelo, este no puede ser una caja negra. Evaluamos la interpretabilidad mediante valores SHAP e importancia por permutación. Los resultados son impecables desde la perspectiva electrofisiológica: el modelo predice Fibrilación Auricular cuando detecta alta variabilidad caótica en el RR combinada con la desaparición de la onda P; predice Taquicardia Ventricular cuando el complejo QRS se ensancha más allá de 120 milisegundos a frecuencias elevadas; y activa la clase Ruido cuando la energía espectral entre 40 y 100 Hz se dispara debido al electrobisturí. El modelo ha aprendido la física y la fisiología del corazón, no correlaciones espurias."
+> "AFib y Normal superan 0.92 de F1, y Ectopia ventricular llega a 0.75. El ruido se reconoce con recall de 0.90. En taquicardia ventricular el recall es 0.65 con precisión 0.29: detecta dos de cada tres episodios, pero con falsas alarmas que habría que ajustar con el equipo clínico. Bloqueo AV y WAP/MAT no se resuelven: vienen de 9 y 23 pacientes. Al agrupar en normal y anormal, el modelo logra sensibilidad 0.919 y AUROC 0.968; la red de los autores es mejor en conjunto, con menos falsas alarmas. Detectar que algo anda mal es mucho más fácil que decir exactamente qué es."
 
 ---
 
-## Diapositiva 13: Despliegue Clínico e Interfaz de Usuario (Eje 6)
-**Título:** Arquitectura de Despliegue e Interfaz Interactiva en Streamlit  
-**Eje Temático:** 6. Despliegue e Interfaz para el Usuario Clínico (Sección 3.8)
+## Diapositiva 12: Explicabilidad (Eje 5)
+**Título:** Importancia por Permutación y SHAP por Clase  
+**Eje Temático:** 5. Métricas de Desempeño e Interpretabilidad (Sección 3.7)
 
 ### Contenido de la Diapositiva
-- **Empaquetado y Pipeline de Producción:**
-  - Modelo serializado y congelado: `models/modelo_arritmias.joblib` (entrenado sobre las 17,410 ventanas representativas de los 472 pacientes) acompañado de `models/meta_modelo.json`.
-  - Módulo reutilizable de producción: `src/ecg_utils.py` con procesamiento idéntico entre entrenamiento y serving.
-- **Flujo de Datos en Entorno Real vs. Prototipo:**
-  - *Caché interna:* Archivos `.npz` y `.csv` preprocesados para experimentación veloz.
-  - *Integración hospitalaria esperada:* Conexión directa a la salida digital del monitor de quirófano mediante **Vital Recorder / protocolo HL7**, alimentando un búfer circular continuo en ventanas de 10 s.
-- **Interfaz Interactiva (`app/app.py`):**
-  - **Banner de Seguridad Clínica:** Notificación explícita de apoyo a la decisión y necesidad de corroboración médica.
-  - **Panel de Control:** Carga de señal ECG cruda en formato CSV, selección de frecuencia de muestreo original con remuestreo automático a 500 Hz, y deslizador interactivo de **umbral de confianza mínima** (valor recomendado: 0.60).
-  - **Visualización Superior:** Traza de ECG continuo con bandas de fondo con código cromático clínico:
-    - 🟢 *Verde:* Ritmo Normal o ectopias aisladas benignas.
-    - ⚪ *Gris:* Ruido no interpretable (solicita reacomodación de electrodos o espera de fin de electrobisturí).
-    - 🔴 *Rojo:* Alerta de arritmia severa (AFib rápida, SVTA, Taquicardia Ventricular).
-  - **Panel Resumen Tabular:** Desglose cronológico por ventanas de 10 s indicando segundo de inicio, diagnóstico de ritmo, probabilidad/confianza, frecuencia cardíaca en lpm y la bandera booleana `Revisar` (activa si hay arritmia roja o si la confianza cae por debajo del umbral del anestesiólogo).
-- **Extensiones de Demostración:**
-  - `[PENDIENTE: validación final de app Streamlit (H1), 3 casos de test de 1 minuto para demo (H2) y demo interactiva tipo monitor de quirófano de doble pantalla con ventanas deslizantes (H4)]`
+- **Permutación (`figures/explic_permutacion.png`):** la más importante es **`p_corr_med`** (parecido de las ondas P entre sí): barajarla baja el F1 en 0.13. Siguen `fc_pico` (0.05), `pnn50` (0.03), `pnn20`, `sig_deriva`, `sd1_sd2`, `qrs_ancho_max`, `rr_skew` y `pr_intervalo`. `n_latidos`, primera en v0 por el atajo del ruido, ya no aporta.
+- **SHAP por clase (G7, `figures/explic_shap_<clase>.png`):**
+  - **AFib:** `p_corr_med` bajo, `p_presente_frac` bajo, `pnn20` y `rr_mad` altos: sin onda P y con RR irregular.
+  - **Normal:** RR regular (`rr_iqr`, `sdnn` bajos) con ondas P presentes y parecidas.
+  - **Ruido:** `corr_plantilla_med` baja, `sig_deriva` y `sig_ruido_alto` altos, `sig_sqi_qrs` bajo.
+  - **TV:** `corr_plantilla_min` baja, `frac_latidos_atipicos` y `qrs_ancho_max` altos, `fc_pico` alto: latidos anchos, distintos y rápidos.
+  - **SVTA:** casi solo `fc_pico` alto, con QRS parecidos entre sí (`frac_latidos_atipicos` baja), lo que la separa de la TV.
+  - **Ectopia ventricular:** `qrs_ancho_max` alto y patrón corto-largo, sin frecuencia alta sostenida.
+  - **Ectopia auricular:** latidos prematuros con onda P conservada.
+  - **Disfunción del nodo:** RR largos; también describe una bradicardia normal, por eso se confunde con Normal.
+  - **Bloqueo AV:** `pr_intervalo` alto (correcto), pero con efecto disperso e influencia de variables de señal: con 9 pacientes puede estar aprendiendo rasgos de esos pacientes.
+  - **WAP/MAT:** la decide sobre todo el QRS estrecho, que no define a esta arritmia; `p_corr_med` pesa poco. Las características no ven lo que la distingue.
+
+### Figuras del Repositorio a Renderizar
+- `figures/explic_permutacion.png`, `figures/explic_shap_global.png` y 2 o 3 de `figures/explic_shap_<clase>.png` (sugerido: AFib, TV y WAP/MAT).
 
 ### Notas del Orador
-> "El mejor modelo del mundo es inútil si no se puede utilizar en la cabecera del paciente. Construimos un prototipo de interfaz clínica en Streamlit utilizando nuestro paquete modular 'ecg_utils.py'. La herramienta permite cargar trazas crudas de ECG, remuestrea automáticamente a 500 Hz y renderiza la señal con bandas de colores intuitivas: verde para ritmo sinusal, gris para ruido y rojo para eventos que requieren acción inmediata como Fibrilación Auricular o TV. Un elemento clave para el especialista es el control de confianza: si un tramo tiene una probabilidad inferior al 60%, el sistema enciende la bandera 'Revisar', invitando al anestesiólogo a auditar manualmente la traza."
+> "Revisamos qué usa el modelo para decidir. En las clases bien resueltas la lógica es fisiológica: AFib por ausencia de onda P y RR irregular; TV por latidos anchos, distintos y rápidos; Ruido por baja calidad de señal. Las clases que fallan también se explican: en WAP/MAT el modelo se apoya en el QRS estrecho, que no es lo que define esa arritmia, y en Bloqueo AV, con solo 9 pacientes, puede estar aprendiendo rasgos de los pacientes. El límite está en la onda P con una sola derivación."
 
 ---
 
-## Diapositiva 14: Monitoreo de Deriva y Estrategia MLOps (Eje 7)
-**Título:** Detección de Deriva de Datos (PSI / KS) y Protocolo de Reentrenamiento  
-**Eje Temático:** 7. Estrategia de Monitoreo de Deriva y Reajuste del Modelo (Sección 3.9)
+## Diapositiva 13: Despliegue e Interfaz (Eje 6)
+**Título:** App en Streamlit y Monitor de Demostración  
+**Eje Temático:** 6. Despliegue e Interfaz para el Usuario (Sección 3.8)
 
 ### Contenido de la Diapositiva
-- **El Reto de la Observabilidad en Quirófano:**
-  - La señal ECG puede degradarse por cambio de fabricante de electrodos, nuevos electrobisturíes, cambios en cables de monitorización o derivas demográficas de pacientes.
-  - Almacenamiento de la distribución basal en `models/referencia_features.csv` (perfil empírico de las 45 características).
-- **Métricas de Deriva: PSI (Population Stability Index) vs. Kolmogorov-Smirnov (KS):**
-  - *Problema del KS en Big Data:* Con miles de ventanas, la prueba KS tiene una potencia estadística tan alta que el $p$-valor resulta casi siempre $\approx 0$ ante variaciones fisiológicas insignificantes.
-  - *Solución Operativa:* Se adopta el **PSI** como regla de decisión en producción:
-    - $\text{PSI} < 0.10$: **Estable** (distribución inalterada).
-    - $0.10 \le \text{PSI} \le 0.20$: **Moderado** (vigilancia preventiva).
-    - $\text{PSI} > 0.20$: **ALTO (Alerta de Deriva Activa)**.
-- **Validación Experimental en Dos Escenarios (Sección 16 del Notebook):**
-  1. *Escenario de Control (Dos cohortes del mismo hospital):* 44 de las 45 variables registraron $\text{PSI} < 0.09$; únicamente `sig_std` mostró un cambio leve ($\text{PSI} = 0.103$). El sistema se mantuvo estable sin falsas alarmas de deriva.
-  2. *Escenario de Perturbación Quirúrgica (Electrodos ruidosos / cambio de monitor:* Ruido de alta frecuencia $\times 3$, amplitud de señal $\times 0.6$):
-     - Detección inmediata con **3 variables en estado ALTO**:
-       - `sig_ruido_alto`: **$\text{PSI} = 2.484$** (Alerta Crítica).
-       - `sig_std`: **$\text{PSI} = 1.944$**.
-       - `sig_p2p`: **$\text{PSI} = 1.646$**.
-- **Protocolo de Reentrenamiento y Promoción Segura:**
-  - Disparadores: Deriva sostenida ($\text{PSI} > 0.20$ en features clave), aumento anómalo de clase Ruido o auditorías clínicas discrepantes.
-  - Flujo de reajuste: Extracción con `ecg_utils.py` $\to$ re-partición agrupada por `subjectid` $\to$ validación en conjunto fijo $\to$ promoción a producción solo si F1 macro no se degrada y el Recall de TV, Bloqueo AV y AFib se preserva $\to$ actualización del versionado en `models/meta_modelo.json`.
-  - `[PENDIENTE: detalles de ejecución del script automatizado de reentrenamiento (bloque H6)]`
+- **Modelos guardados:**
+  - `models/modelo_arritmias.joblib`: XGBoost reajustado con 17,410 ventanas de 472 pacientes; lo usa la app con archivos propios.
+  - `models/modelo_evaluacion.joblib`: copia entrenada **sin** los pacientes del test; analiza los ejemplos y es la referencia de `reentrenar.py`.
+  - Mismo preprocesamiento en entrenamiento y producción: `src/ecg_utils.py`.
+- **App (`app/app.py`):**
+  - Elegir un ejemplo incluido o subir un CSV/TXT (una columna en mV); frecuencia de muestreo configurable, con conversión a 500 Hz; control de confianza mínima (0.60 por defecto).
+  - **Primero la conclusión:** tramos analizados, con alerta, para revisar y con ruido, y un mensaje claro ("Alerta: ... a partir del segundo ...").
+  - Señal con fondo por estado: **rojo alerta** (AFib, SVTA, TV, Bloqueo AV), **ámbar revisar** (otra clase no normal o confianza baja), **verde sin alerta**, **gris ruido**.
+  - Tabla por tramo de 10 s (inicio, estado, ritmo en lenguaje claro, frecuencia, confianza), descargable en CSV.
+  - Avisos de formato y aclaración de que es una herramienta de apoyo.
+- **Ejemplos (`app/ejemplos/`):** tres tramos de 1 minuto de pacientes del test, elegidos solo con la etiqueta de los médicos (predicciones cada 2 s del monitor):
+  - Normal con ectopias (caso 1110): 22 Normal, 3 Ectopia ventricular y **1 falsa alarma de Bloqueo AV**.
+  - AFib (caso 1738): 26 de 26 ventanas AFib.
+  - Salva de TV (caso 1484): 20 Normal y 6 TV; la alerta dura unos 10 s mientras la salva está en la ventana.
+- **Monitor (`demo/monitor.html`):** página autónoma con dos monitores sincronizados, el convencional y el que colorea según la predicción, junto a la etiqueta de los médicos. Reproduce predicciones ya calculadas con el modelo real.
+- **Integración real (no implementada):** el monitor transmitiría por protocolo del fabricante o HL7 (VitalDB grabó con Vital Recorder); se guardarían los últimos 10 s y se repetiría el mismo análisis.
 
 ### Notas del Orador
-> "Una vez desplegado un modelo, el verdadero desafío es la deriva de datos (data drift). Demostramos experimentalmente cómo detectar degradación mediante el Índice de Estabilidad Poblacional (PSI). La prueba KS convencional genera falsas alarmas por exceso de potencia muestral, mientras que el PSI discrimina cambios reales. En condiciones basales, el sistema se mantiene en verde. Pero cuando simulamos un cambio de monitor con electrodos degradados, el PSI de la variable 'sig_ruido_alto' se dispara a 2.484, encendiendo de inmediato la alarma de reajuste. Diseñamos un protocolo cerrado de MLOps: el modelo solo se reentrena agrupando por paciente y únicamente se promueve si supera al modelo anterior sin sacrificar la sensibilidad en arritmias de riesgo vital."
+> "La app está pensada para personal no técnico. Primero muestra la conclusión, cuántos tramos tienen alerta o requieren revisión, y luego la señal coloreada y una tabla descargable. Los tres ejemplos son de pacientes del test, elegidos sin mirar si el modelo acierta, y los analiza una copia del modelo que nunca vio a esos pacientes. Por eso también se ven errores reales, como una falsa alarma de Bloqueo AV en el ejemplo de ectopias. El monitor de demostración muestra el retardo real de una ventana de 10 segundos: la alerta de TV aparece cuando la salva entra en la ventana."
+
+---
+
+## Diapositiva 14: Monitoreo de Deriva y Reentrenamiento (Eje 7)
+**Título:** Deriva de Datos (PSI / KS) y Reentrenamiento Seguro  
+**Eje Temático:** 7. Estrategia de Monitoreo y Reajuste del Modelo (Sección 3.9)
+
+### Contenido de la Diapositiva
+- **Qué se vigila:**
+  - Entradas (sin etiquetas): PSI de cada característica frente a `models/referencia_muestra.csv`.
+  - Predicciones: fracción por clase, alertas por cirugía y confianza media; más ruido suele indicar problemas de equipo.
+  - Desempeño real: un anestesiólogo revisa una muestra mensual; alarma si el F1 cae > 0.03 o el recall de TV, Bloqueo AV o AFib > 0.02.
+- **PSI vs. KS:** con miles de ventanas el p-valor del KS sale ínfimo aunque el cambio sea pequeño; se decide con el PSI (< 0.1 estable, 0.1–0.2 moderado, > 0.2 alto).
+- **Dos escenarios (sección 16.1):**
+  1. Dos mitades de pacientes del mismo hospital: ninguna variable en ALTO; solo `sig_std` moderada (PSI 0.103).
+  2. Equipo simulado más ruidoso y de menor ganancia (`sig_ruido_alto` ×3, `sig_std` y `sig_p2p` ×0.6): exactamente esas 3 pasan a ALTO (PSI 2.484, 1.944 y 1.646) y el resto no cambia.
+- **Reentrenamiento (`reentrenar.py`, sección 16.2):**
+  - Construye las mismas 50,517 ventanas que el notebook (etiquetas y características idénticas).
+  - Entrena un candidato y lo compara con el actual en la validación fija (pliegue 0); lo promueve solo si el F1 y el recall de TV, Bloqueo AV y AFib no bajan más de 0.01. Guarda versiones en `models/versiones/`.
+  - Ensayo con 60 pacientes buenos: F1 0.541 → 0.545, recall TV 0.60 → 0.68 → **PROMOVER**.
+  - Ensayo con esos pacientes mal etiquetados: F1 0.541 → 0.531, recall AFib 0.942 → 0.929 → **RECHAZAR**.
+- **Puesta en producción:** modo sombra durante algunas cirugías antes de reemplazar al modelo; volver atrás es recuperar la versión anterior.
+
+### Notas del Orador
+> "Un modelo en producción se degrada cuando cambian monitores, electrodos o pacientes. Vigilamos las entradas con el PSI, porque el KS da falsas alarmas con tantos datos. Entre dos grupos de pacientes del mismo hospital todo queda estable; al simular un equipo más ruidoso, las tres variables alteradas se disparan y el resto no se mueve. Para reentrenar, el script compara al candidato con el modelo actual sobre pacientes fijos que ninguno vio: con datos buenos lo promueve y con datos mal etiquetados lo rechaza."
 
 ---
 
 ## Diapositiva 15: Conclusiones y Trabajo Futuro (Cierre)
-**Título:** Síntesis del Proyecto: Rigor Metodológico y Visión Futura  
-**Eje Temático:** Síntesis Ejecutiva y Cierre
+**Título:** Síntesis: Rigor Metodológico y Próximos Pasos  
+**Eje Temático:** Cierre
 
 ### Contenido de la Diapositiva
-- **Aportes Principales:**
-  1. **Solución Realista de Punta a Punta:** Pipeline completamente funcional que opera con picos QRS detectados autónomamente, resistente a artefactos masivos de electrobisturí gracias al detector adaptativo v2.
-  2. **Honestidad Metodológica y Control de Fuga:** Demostración empírica de que la partición aleatoria infla falsamente el F1 macro en $+0.229$. Validación estricta por `subjectid` con test ciego (F1 macro = 0.526, IC 95% $[0.458, 0.558]$).
-  3. **Alineación con la Prioridad Quirúrgica:** Recall del 94% en AFib, 90% en Ruido y 65% en Taquicardia Ventricular, optimizando el balance entre detección oportuna y mitigación de fatiga por alarmas.
-  4. **Arquitectura MLOps Integral:** Interfaz de usuario intuitiva en Streamlit y monitoreo continuo de deriva estadística basado en PSI.
-- **Limitaciones Reconocidas:**
-  - El monitoreo intraoperatorio con una única derivación (DII) tiene límites biofísicos para detectar alteraciones sutiles de la onda P (Bloqueo AV y WAP/MAT).
-- **Próximos Pasos:**
-  - Integración multi-derivación (DII + V5), validación prospectiva en quirófano simulado y auto-calibración conformal para cuantificación formal de incertidumbre.
+- **Aportes:**
+  1. **Del ECG crudo a la predicción**, con picos detectados por un algoritmo propio; las anotaciones solo etiquetan.
+  2. **Medición honesta:** partición por paciente, pliegues fijos y distribución real. F1 macro **0.545 ± 0.014** (validación externa) y **0.541** en test (IC95 % [0.474, 0.573]), frente a 0.077 de la línea base. La validación aleatoria lo habría inflado a 0.792.
+  3. **El dominio pesa más que el algoritmo:** la morfología aporta +0.08; XGBoost, +0.011.
+  4. **Una regla que protege las arritmias peligrosas** evitó adoptar variantes con más F1 pero menos TV detectadas.
+  5. **Ruta a producción:** app, monitor de demostración, monitoreo de deriva y reentrenamiento con salvaguarda.
+- **Limitaciones:**
+  - Segmentos preseleccionados por un modelo de IA: las métricas no estiman una cirugía completa.
+  - Un solo hospital; Bloqueo AV y WAP/MAT sin resolver; precisión de TV 0.29; retardo de la ventana de 10 s; v3 elegida sobre los mismos pliegues; sin integración en vivo; no es un dispositivo médico validado.
+- **Trabajo futuro:** más pacientes de las clases raras, CNN 1D sobre la señal cruda, combinar ventanas corta y larga (la de 20 s dio 0.576), mejores características de onda P, umbrales ajustados con el equipo clínico y validación en otra base.
 
 ### Notas del Orador
-> "En conclusión, este proyecto demuestra que el machine learning aplicado a la medicina exige, por encima de todo, honestidad metodológica. Al eliminar la fuga de datos por paciente y diseñar un detector resistente a las condiciones hostiles del quirófano, logramos un sistema robusto, explicable y clínicamente útil para salvaguardar la vida del paciente bajo anestesia general. Muchas gracias por su atención. Quedamos atentos a sus preguntas y comentarios."
+> "En resumen: el número final es más bajo que el de nuestra primera versión, pero es honesto. Cada corrección quitó un atajo, y en las mismas condiciones cada versión mejoró a la anterior. La mayor ganancia vino de entender el ECG, no de cambiar de algoritmo, y la regla de adopción evitó elegir modelos que detectaban menos taquicardias ventriculares. El siguiente paso es conseguir más pacientes de las clases raras y probar redes sobre la señal cruda. Muchas gracias."

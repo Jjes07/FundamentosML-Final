@@ -1,123 +1,100 @@
-# Guion Técnico Cronometrado: Video Demostrativo (2 Minutos)
-## Sistema de Apoyo a la Decisión Clínica para Monitoreo de ECG Intraoperatorio
-### Demostración del Modelo Desplegado y su Interfaz de Usuario (`app/app.py`)
+# Guion del Video Demostrativo (2 minutos)
+## Sistema de Apoyo a la Detección de Arritmias en Cirugía
+### Modelo desplegado (`app/app.py`) y monitor de demostración (`demo/monitor.html`)
 
 ---
 
-> **Especificaciones del Video:**
-> - **Duración total:** 120 segundos (02:00 exactos).
-> - **Requisito curricular:** Sección 4 de `docs/Requeriments_FinalP.pdf` ("video de máximo 2 minutos mostrando el funcionamiento del modelo desplegado y su interfaz").
-> - **Pacing de voz en off:** ~135 palabras por minuto. Conteo de locución diseñado para **~270 palabras** de narración continua, pausada y profesional.
-> - **Versión del modelo en producción:** `[PENDIENTE: confirmar si el modelo cargado en el video sigue siendo HistGradientBoosting v2 (2026.11.01) o si cambia tras el cierre del bloque F]`.
+> **Especificaciones:**
+> - **Duración:** 120 s como máximo (Sección 4 de `docs/Requeriments_FinalP.pdf`: "video de máximo 2 minutos mostrando el funcionamiento del modelo desplegado y su interfaz").
+> - **Narración:** unas 260 palabras, a unos 130 palabras por minuto.
+> - **Modelo:** XGBoost v3. La app lo muestra al pie: "Modelo XGBoost v2026.11.02". Si se vuelve a ejecutar el notebook, la fecha cambia.
+> - **Antes de grabar:** ejecutar `streamlit run app/app.py` y abrir `demo/monitor.html` en el navegador. Revisar en pantalla los resultados reales de cada ejemplo: este guion no inventa cifras por tramo, se leen de la app.
 
 ---
 
-## Estructura Temporal del Video (120 Segundos)
+## Estructura
 
-| Bloque | Intervalo de Tiempo | Duración | Eje Temático Demostrado | Enfoque de Pantalla |
-| :---: | :---: | :---: | :--- | :--- |
-| **B1** | **00:00 – 00:20** | 20 s | Introducción al Reto Quirúrgico y Portada | Banner clínico de la aplicación y contexto hospitalario |
-| **B2** | **00:20 – 00:45** | 25 s | Carga de Trazas ECG y Parámetros de Inferencia | Sidebar interactivo: Frecuencia de muestreo y archivo CSV |
-| **B3** | **00:45 – 01:10** | 25 s | Procesamiento en Vivo y Trazas con Código Cromático | Gráfica continua interactiva con bandas Verde / Gris / Rojo |
-| **B4** | **01:10 – 01:40** | 30 s | Auditoría Tabular, Umbral de Confianza y Casos Críticos | Slider de confianza, métricas de frecuencia y bandera `Revisar` |
-| **B5** | **01:40 – 02:00** | 20 s | Arquitectura MLOps, Detección de Deriva y Cierre | Monitoreo PSI continuo y despedida institucional |
-
----
-
-## Guion Detallado: Acción Visual vs. Locución
-
-### Bloque 1: Introducción y Contexto Quirúrgico (00:00 – 00:20 | 20 segundos)
-
-#### [PANTALLA / ACCIÓN VISUAL]
-- **00:00 – 00:05:** Primer plano de la interfaz web abierta en el navegador: Título destacado `🏥 Monitoreo Inteligente de ECG Intraoperatorio` y subtítulo con metadatos del modelo (`HistGradientBoosting v2`, 500 Hz, Derivación II).
-- **00:05 – 00:12:** Zoom hacia el banner de seguridad clínica superior en tono ámbar/azul:  
-  *«⚠️ Herramienta de apoyo a la decisión para el anestesiólogo. No sustituye el juicio clínico ni la monitorización estándar.»*
-- **00:12 – 00:20:** Paneado general hacia la barra lateral derecha y el lienzo principal vacío esperando la carga del paciente.
-
-#### [VOZ EN OFF / NARRACIÓN] (44 palabras)
-> *"En quirófano, la fatiga por falsas alarmas y el ruido de electrocauterio dificultan detectar arritmias críticas. Presentamos un sistema de apoyo a la decisión médica para monitoreo de electrocardiograma intraoperatorio, diseñado para clasificar el ritmo cardíaco en ventanas de diez segundos sin depender de anotaciones humanas."*
+| Bloque | Tiempo | Qué se muestra |
+| :---: | :---: | :--- |
+| **B1** | 00:00 – 00:15 | Título de la app y aviso de herramienta de apoyo |
+| **B2** | 00:15 – 00:45 | Ejemplo "Fibrilación auricular": conclusión, señal coloreada, tabla |
+| **B3** | 00:45 – 01:15 | Monitor de demostración con la salva de TV |
+| **B4** | 01:15 – 01:40 | Ejemplo "Normal con ectopias", control de confianza y descarga |
+| **B5** | 01:40 – 02:00 | Archivo propio, respaldo del modelo y cierre |
 
 ---
 
-### Bloque 2: Carga de Señal y Configuración de Inferencia (00:20 – 00:45 | 25 segundos)
+## Guion Detallado
 
-#### [PANTALLA / ACCIÓN VISUAL]
-- **00:20 – 00:28:** El cursor interactúa con el panel lateral derecho (`sidebar`):
-  - Muestra el selector de **Frecuencia de muestreo** configurado en `500 Hz` (con opción de remuestreo automático si la fuente difiere).
-  - Puntero resalta el control deslizante **Umbral de confianza mínima** posicionado en `0.60`.
-- **00:28 – 00:37:** Clic en el componente `st.file_uploader`:  
-  `[PENDIENTE: selección de los 3 archivos CSV de 1 minuto del conjunto de test — ej. normal con ectopias, AFib, salva de TV con ruido — del bloque H2]`.  
-  Se arrastra y suelta un archivo de prueba representativo (ejemplo: `caso_test_afib_tv_1min.csv`).
-- **00:37 – 00:45:** Animación breve de carga (`Extrayendo 45 características...`). Se activa el pipeline modular de `src/ecg_utils.py` ejecutando el filtrado Butterworth SOS (0.5–40 Hz) y el detector QRS adaptativo v2 con piso robusto.
+### B1. Presentación (00:00 – 00:15)
 
-#### [VOZ EN OFF / NARRACIÓN] (56 palabras)
-> *"Desde el panel lateral ajustamos la frecuencia de muestreo y definimos un umbral de confianza operativa del sesenta por ciento. Cargamos una señal electrocardiográfica cruda de un minuto tomada de nuestro conjunto de prueba independiente de pacientes nuevos. De inmediato, el sistema filtra artefactos y extrae cuarenta y cinco características de ritmo, calidad de señal y morfología."*
+**Pantalla**
+- App abierta: título "Apoyo a la detección de arritmias en cirugía" y el aviso "Herramienta de apoyo. No reemplaza el criterio clínico ni diagnostica."
+
+**Narración** (unas 35 palabras)
+> "Durante una cirugía, el anestesiólogo vigila el electrocardiograma mientras atiende muchas otras tareas. Esta herramienta analiza el ECG en tramos de diez segundos y señala los que tienen un ritmo anormal. Es un apoyo: no diagnostica."
 
 ---
 
-### Bloque 3: Inferencia y Visualización con Código de Alertas (00:45 – 01:10 | 25 segundos)
+### B2. Ejemplo de fibrilación auricular (00:15 – 00:45)
 
-#### [PANTALLA / ACCIÓN VISUAL]
-- **00:45 – 00:55:** La pantalla despliega la gráfica interactiva superior con la señal ECG filtrada y las **bandas de fondo coloreadas por tramo de 10 segundos**:
-  - Tramos iniciales con fondo **Verde suave**: Ritmo Normal y ectopias supraventriculares aisladas.
-  - Tramo central con fondo **Gris**: Artefacto/Ruido (desconexión o interferencia del bisturí).
-  - Tramo posterior con fondo **Rojo**: Alerta crítica de arritmia de alto riesgo (Fibrilación Auricular con respuesta ventricular rápida o salva de Taquicardia Ventricular).
-- **00:55 – 01:10:** Demostración de interactividad: el cursor hace zoom dinámico sobre un complejo QRS dentro del tramo rojo, mostrando la preservación morfológica de fase cero sin retardo temporal.
-- `[PENDIENTE: demostración de la vista de monitor quirúrgico en tiempo real (doble pantalla: traza cruda a la izquierda y traza con predicción/alertas por ventana deslizante a la derecha) del bloque H4]`.
+**Pantalla**
+- Opción "Un ejemplo incluido" y, en el selector, "Fibrilación auricular". Se lee la nota: el análisis lo hace una copia del modelo que nunca vio a este paciente.
+- Las cuatro cifras de arriba: tramos analizados, con alerta, para revisar y con ruido.
+- El mensaje rojo "Alerta: Fibrilación auricular a partir del segundo ...".
+- La señal con el fondo rojo en los tramos con alerta y la tabla "Detalle por tramo de 10 segundos" (inicio, estado, ritmo, frecuencia, confianza).
 
-#### [VOZ EN OFF / NARRACIÓN] (57 palabras)
-> *"La interfaz grafica la traza continua estratificada con un código cromático intuitivo: verde para ritmos normales o ectopias estables; gris para segmentos con ruido excesivo o electrobisturí que no deben interpretarse; y rojo para arritmias de riesgo vital. Esto permite al especialista priorizar de un solo vistazo el estado hemodinámico del paciente en el campo operatorio."*
+**Narración** (unas 65 palabras)
+> "Elegimos un ejemplo real de un paciente que el modelo nunca vio, en fibrilación auricular. La app muestra primero la conclusión: cuántos tramos tienen alerta y desde qué segundo. Debajo, la señal se colorea: rojo para alerta, ámbar para revisar, verde sin alerta y gris para ruido. La tabla explica cada tramo en lenguaje claro, con la frecuencia cardíaca y la confianza del modelo."
 
 ---
 
-### Bloque 4: Triage Tabular, Confianza y Casos Críticos (01:10 – 01:40 | 30 segundos)
+### B3. Monitor con la salva de taquicardia ventricular (00:45 – 01:15)
 
-#### [PANTALLA / ACCIÓN VISUAL]
-- **01:10 – 01:22:** Scroll hacia la tabla inferior `Resumen por Tramo (Ventanas de 10 s)`:
-  - Columnas visibles: `Inicio (s)`, `Ritmo Predicho`, `Confianza (%)`, `FC Media (lpm)`, `Revisar`.
-  - La fila del segundo 20.0 destaca en rojo con `Ritmo: Taquicardia Ventricular`, `Confianza: 78.4%`, `FC: 148 lpm` y bandera `Revisar: SI`.
-  - La fila de ruido muestra `Ritmo: Ruido / Artefacto`, `Confianza: 92.1%`, bandera `Revisar: SI`.
-- **01:22 – 01:32:** El usuario mueve el control deslizante de confianza desde `0.60` hasta `0.85`:
-  - Instantáneamente, un tramo ambiguo de ectopia auricular con 72% de confianza pasa su bandera `Revisar` a `SI` y se ilumina un mensaje de advertencia preventivo en la interfaz.
-- **01:32 – 01:40:** Vista del resumen superior de métricas agregadas: 6 ventanas procesadas, 1 alerta crítica activa, 0 asistolias.
+**Pantalla**
+- `demo/monitor.html`, ejemplo "Salva de TV" (caso 1484). Dos monitores sincronizados: el convencional y el que colorea según el modelo, con la etiqueta de los médicos al lado.
+- Dejar correr hasta que entra la salva: la alerta de TV se enciende y se mantiene unos 10 s.
 
-#### [VOZ EN OFF / NARRACIÓN] (68 palabras)
-> *"En la tabla inferior, cada tramo desglosa el ritmo estimado, la frecuencia cardíaca y la probabilidad del modelo. Si se detecta una arritmia grave como taquicardia ventricular, o si la confianza del clasificador cae por debajo del umbral exigido por el médico, la bandera 'Revisar' se activa automáticamente. Esto evita decisiones a ciegas y focaliza la atención médica exactamente en las ventanas dudosas o inestables."*
+**Narración** (unas 65 palabras)
+> "Así se vería en un quirófano. A la izquierda, el monitor convencional; a la derecha, el mismo trazo con la predicción del modelo, actualizada cada dos segundos. Cuando aparece una salva breve de taquicardia ventricular, el monitor se pone en rojo. La alerta llega cuando la salva entra en los últimos diez segundos analizados: ese es el retardo real de este diseño."
 
 ---
 
-### Bloque 5: Arquitectura MLOps, Deriva y Cierre (01:40 – 02:00 | 20 segundos)
+### B4. Ectopias, confianza y descarga (01:15 – 01:40)
 
-#### [PANTALLA / ACCIÓN VISUAL]
-- **01:40 – 01:48:** Transición hacia una lámina sintética que muestra la arquitectura de despliegue y observabilidad:
-  - Diagrama de flujo: `VitalDB (473 Pacientes)` $\to$ `Validación GroupKFold` $\to$ `HistGradientBoosting (models/modelo_arritmias.joblib)` $\to$ `Monitoreo PSI continuo (models/referencia_features.csv)`.
-  - Semáforo de deriva indicando estado verde ($\text{PSI} < 0.10$) en condiciones normales y alerta ante electrodos degradados ($\text{PSI} > 0.20$).
-- **01:48 – 01:55:** Regreso a la pantalla principal de Streamlit con el equipo de trabajo acreditado en el pie de página.
-- **01:55 – 02:00:** Cierre con logotipos institucionales de la Universidad EAFIT y código abierto en GitHub.
+**Pantalla**
+- En la app, ejemplo "Normal con ectopias" (caso 1110).
+- Mover el control "Confianza mínima" de 0.60 a un valor más alto y mostrar cómo cambian los tramos "Para revisar".
+- Clic en "Descargar resultados (CSV)".
 
-#### [VOZ EN OFF / NARRACIÓN] (45 palabras)
-> *"El sistema opera respaldado por un protocolo estricto de validación por paciente, garantizando cero fuga de información. Además, incorpora monitoreo de deriva estadística con el índice PSI para alertar degradación de electrodos en quirófano. Machine learning robusto, transparente y centrado en la seguridad del paciente."*
+**Narración** (unas 55 palabras)
+> "En este paciente con latidos prematuros, la mayoría de los tramos son normales. Si el modelo duda, el tramo se marca para revisión, y el usuario decide qué tan exigente ser con este control. Los resultados se descargan para el registro. El modelo también se equivoca: por eso siempre pide confirmar en el monitor antes de actuar."
 
----
-
-## Balance del Conteo de Palabras y Tiempos de Locución
-
-| Segmento | Duración | Palabras Locución | Palabras por Minuto (PPM) | Estado de Viabilidad |
-| :--- | :---: | :---: | :---: | :---: |
-| **Bloque 1:** Introducción Quirúrgica | 20 s | 44 palabras | 132 PPM | Ritmo óptimo (pausado, claro) |
-| **Bloque 2:** Configuración y Carga | 25 s | 56 palabras | 134 PPM | Ritmo natural conversacional |
-| **Bloque 3:** Trazas y Código de Colores | 25 s | 57 palabras | 136 PPM | Ritmo dinámico descriptivo |
-| **Bloque 4:** Triage Tabular y Confianza | 30 s | 68 palabras | 136 PPM | Ritmo técnico explicativo |
-| **Bloque 5:** MLOps, PSI y Cierre | 20 s | 45 palabras | 135 PPM | Ritmo conclusivo institucional |
-| **TOTAL** | **120 s (02:00)** | **270 palabras** | **135.0 PPM** | **Cumplimiento exacto de especificación** |
+**Nota para la grabación:** en las predicciones cada 2 s del monitor, este ejemplo tuvo una falsa alarma aislada de Bloqueo AV. Si aparece en la app, mencionarla: muestra con honestidad la baja precisión de esa clase.
 
 ---
 
-## Lista de Marcadores Pendientes para Producción Audiovisual
+### B5. Archivo propio y cierre (01:40 – 02:00)
 
-1. **`[PENDIENTE: selección de los 3 archivos CSV de 1 minuto del conjunto de test — ej. normal con ectopias, AFib, salva de TV con ruido — del bloque H2]`**:
-   - Requiere aislar 3 clips de 60 segundos (30,000 muestras cada uno a 500 Hz) a partir de los 93 pacientes exclusivos del Pliegue 0 de test para su uso durante la grabación en vivo.
-2. **`[PENDIENTE: demostración de la vista de monitor quirúrgico en tiempo real (doble pantalla: traza cruda a la izquierda y traza con predicción/alertas por ventana deslizante a la derecha) del bloque H4]`**:
-   - Una vez finalizada la vista de monitor de quirófano en tiempo real del bloque H4, grabar una toma adicional de 8 segundos para insertarla en el segundo 00:55 del video.
-3. **`[PENDIENTE: confirmar si el modelo cargado en el video sigue siendo HistGradientBoosting v2 (2026.11.01) o si cambia tras el cierre del bloque F]`**:
-   - En caso de que algún experimento del Bloque F supere la regla de adopción ($+0.005$ CV externa en 4/5 pliegues sin degradar recall de TV/Bloqueo AV/AFib), actualizar la referencia del modelo en el banner de la interfaz y en los metadatos visuales.
+**Pantalla**
+- Opción "Mi propio archivo" y el desplegable "Formato del archivo y cómo funcionaría en un monitor".
+- Pie de la app con el modelo y su advertencia. Cierre con el enlace al repositorio.
+
+**Narración** (unas 45 palabras)
+> "También acepta un archivo propio, con la frecuencia de muestreo del equipo. El modelo se validó con pacientes que nunca vio, en cinco grupos distintos, y detecta casi el 92 por ciento de los tramos anormales. Bloqueo AV y ritmo multifocal aún se reconocen poco."
+
+---
+
+## Cifras citadas y su origen en el notebook
+
+| Cifra | Origen |
+| :--- | :--- |
+| Tramos de 10 s, predicciones cada 2 s en el monitor | Secciones 8 y 15.2 |
+| "Casi el 92 %" de los tramos anormales | G9: sensibilidad 0.919 al agrupar en normal y anormal (validación externa, sin Ruido) |
+| Alerta de TV que dura unos 10 s | Interpretación de la sección 15 (salida de `generar_demo.py`) |
+| Falsa alarma de Bloqueo AV en el ejemplo de ectopias | Salida de `generar_demo.py`: 22 Normal, 3 Ectopia ventricular, 1 Bloqueo AV |
+
+## Pendiente para la grabación
+
+- Grabar con la app local o con la app ya publicada (publicarla requiere una cuenta del equipo en Streamlit Community Cloud o Hugging Face Spaces; ver `PENDIENTES.md`).
+- Cronometrar la narración: si pasa de 2 minutos, recortar B4.
