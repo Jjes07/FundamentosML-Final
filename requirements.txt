@@ -1,12 +1,15 @@
 numpy
 pandas
 scipy
-scikit-learn
+scikit-learn==1.9.1
+xgboost==3.4.1
 matplotlib
 seaborn
 joblib
 shap
 vitaldb
-streamlit
+streamlit>=1.50
 tqdm
 plotly
+lightgbm
+imbalanced-learn

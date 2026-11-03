@@ -1,4 +1,8 @@
 data/ecg_cache/
+data/cache_experimentos/
 models/*.joblib
+!models/modelo_arritmias.joblib
+!models/modelo_evaluacion.joblib
+models/versiones/
 __pycache__/
 .ipynb_checkpoints/

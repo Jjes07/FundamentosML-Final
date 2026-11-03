@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor de arritmias</title>
+<style>
+  :root {
+    --fondo: #0d1110; --panel: #151a18; --borde: #2a312e; --texto: #eef1ee; --texto2: #a9b3ae; --traza: #5ee08a;
+    --normal: #2fae66; --revisar: #d9a11b; --alerta: #e5484d; --ruido: #7b8580;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1400px; margin: 0 auto; padding: 20px 24px 28px; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0; }
+  .aviso { color: var(--texto2); font-size: 13px; }
+  .controles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  button { background: var(--panel); color: var(--texto); border: 1px solid var(--borde); border-radius: 6px; padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer; min-height: 38px; }
+  button:hover { border-color: var(--texto2); }
+  button[aria-pressed="true"] { background: var(--texto); color: var(--fondo); border-color: var(--texto); }
+  .sep { flex: 1; }
+  .monitores { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .monitor { background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+  .cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; min-height: 76px; }
+  .cab small { display: block; color: var(--texto2); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .fc { font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .fc span { font-size: 14px; font-weight: 400; color: var(--texto2); margin-left: 4px; }
+  .ritmo { font-size: 19px; font-weight: 600; line-height: 1.2; }
+  .conf { font-size: 13px; color: var(--texto2); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+  canvas { display: block; width: 100%; height: 260px; }
+  .alerta { display: flex; gap: 8px; align-items: center; min-height: 40px; padding: 8px 14px; font-weight: 600; font-size: 14px; border-top: 1px solid var(--borde); color: var(--texto2); }
+  .alerta.activa { background: var(--alerta); color: #fff; }
+  .alerta.revisar { background: var(--revisar); color: #161200; }
+  .tiempos { margin-top: 14px; background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; padding: 12px 14px; }
+  .fila { display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center; margin-bottom: 6px; font-size: 13px; color: var(--texto2); }
+  .franja { position: relative; height: 22px; background: var(--fondo); border-radius: 3px; overflow: hidden; }
+  .franja i { position: absolute; top: 0; bottom: 0; border-right: 1px solid var(--panel); }
+  .cursor { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--texto); }
+  .leyenda { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 13px; color: var(--texto2); }
+  .leyenda b { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .nota { margin-top: 12px; font-size: 13px; color: var(--texto2); max-width: 110ch; }
+  @media (max-width: 860px) {
+    main { padding: 14px 16px 22px; }
+    .monitores { grid-template-columns: 1fr; }
+    canvas { height: 180px; }
+    .fila { grid-template-columns: 1fr; gap: 3px; margin-bottom: 9px; }
+    .sep { display: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Apoyo a la detección de arritmias en cirugía</h1>
+    <div class="aviso">Herramienta de apoyo. No reemplaza el criterio clínico ni diagnostica.</div>
+  </header>
+
+  <div class="controles">
+    <span id="casos" style="display:contents"></span>
+    <span class="sep"></span>
+    <button id="play" type="button">Pausar</button>
+    <button id="reiniciar" type="button">Reiniciar</button>
+    <button id="vel" type="button">Velocidad 1×</button>
+  </div>
+
+  <div class="monitores">
+    <section class="monitor" aria-label="Monitor sin el modelo">
+      <div class="cab">
+        <div><small>Monitor convencional</small><div class="ritmo">ECG derivación II</div></div>
+        <div class="fc"><output id="fc1">--</output><span>lpm</span></div>
+      </div>
+      <canvas id="c1"></canvas>
+      <div class="alerta">Sin análisis de ritmo</div>
+    </section>
+    <section class="monitor" aria-label="Monitor con el modelo">
+      <div class="cab">
+        <div><small>Con el modelo</small><div class="ritmo" id="ritmo">Analizando…</div></div>
+        <div class="conf"><span id="conf"></span><br><span id="edad"></span></div>
+      </div>
+      <canvas id="c2"></canvas>
+      <div class="alerta" id="alerta" role="status">Esperando los primeros 10 segundos</div>
+    </section>
+  </div>
+
+  <div class="tiempos">
+    <div class="fila"><div>Predicción del modelo</div><div class="franja" id="fp"></div></div>
+    <div class="fila"><div>Etiqueta de los médicos</div><div class="franja" id="fr"></div></div>
+    <div class="leyenda" id="leyenda"></div>
+  </div>
+  <p class="nota" id="nota"></p>
+</main>
+
+<script>
+const DEMO = /*DATOS*/null;
+
+const GRUPOS = {
+  normal:  { nombre: "Ritmo normal", color: "--normal" },
+  revisar: { nombre: "Conviene revisar", color: "--revisar" },
+  alerta:  { nombre: "Arritmia peligrosa", color: "--alerta" },
+  ruido:   { nombre: "Señal no interpretable", color: "--ruido" },
+};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const $ = id => document.getElementById(id);
+const VENTANA_VISIBLE = 8;  // segundos en pantalla
+
+let caso = DEMO.casos[0], t = 0, ultimo = null, corriendo = true, vel = 1;
+
+function prediccionEn(s) {
+  // Última predicción ya disponible en el instante s: el modelo solo usa los 10 s anteriores
+  let r = null;
+  for (const p of caso.predicciones) { if (p.t <= s) r = p; else break; }
+  return r;
+}
+
+function dibujar(cv, fondo) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = css("--panel"); g.fillRect(0, 0, w, h);
+  const x0 = t - VENTANA_VISIBLE;
+  const xDe = s => (s - x0) / VENTANA_VISIBLE * w;
+  if (fondo) {
+    // Fondo coloreado con la predicción vigente en cada momento
+    const ps = caso.predicciones;
+    ps.forEach((p, i) => {
+      const fin = i + 1 < ps.length ? ps[i + 1].t : caso.duracion;
+      if (fin < x0 || p.t > t) return;
+      g.globalAlpha = 0.22; g.fillStyle = css(GRUPOS[p.grupo].color);
+      g.fillRect(xDe(p.t), 0, xDe(Math.min(fin, t)) - xDe(p.t), h);
+      g.globalAlpha = 1;
+    });
+  }
+  // Cuadrícula tenue de 1 s
+  g.strokeStyle = css("--borde"); g.lineWidth = 1; g.beginPath();
+  for (let s = Math.ceil(Math.max(x0, 0)); s <= t; s++) { g.moveTo(xDe(s), 0); g.lineTo(xDe(s), h); }
+  g.stroke();
+  // Traza: últimos segundos, con escala fija por caso
+  const fs = caso.fs, a = Math.max(0, Math.floor(x0 * fs)), b = Math.min(caso.ecg.length - 1, Math.floor(t * fs));
+  g.strokeStyle = css("--traza"); g.lineWidth = 1.6; g.lineJoin = "round"; g.beginPath();
+  for (let i = a; i <= b; i++) {
+    const y = h * 0.5 - (caso.ecg[i] / caso.escala) * h * 0.42;
+    if (i === a) g.moveTo(xDe(i / fs), y); else g.lineTo(xDe(i / fs), y);
+  }
+  g.stroke();
+}
+
+function actualizarTexto() {
+  const p = prediccionEn(t);
+  $("fc1").textContent = p && p.fc ? Math.round(p.fc) : "--";
+  if (!p) {
+    $("ritmo").textContent = "Analizando…"; $("conf").textContent = ""; $("edad").textContent = "";
+    $("alerta").className = "alerta"; $("alerta").textContent = "Esperando los primeros 10 segundos";
+    return;
+  }
+  $("ritmo").textContent = p.nombre;
+  $("conf").textContent = `Confianza ${Math.round(p.conf * 100)} %`;
+  $("edad").textContent = `Minuto ${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+  const al = $("alerta");
+  if (p.grupo === "alerta") { al.className = "alerta activa"; al.textContent = `⚠ Alerta: ${p.nombre}`; }
+  else if (p.grupo === "revisar") { al.className = "alerta revisar"; al.textContent = `▲ Conviene revisar: ${p.nombre}`; }
+  else if (p.grupo === "ruido") { al.className = "alerta"; al.textContent = "Señal con ruido: revisar electrodos"; }
+  else { al.className = "alerta"; al.textContent = "✓ Sin alertas"; }
+}
+
+function franja(el, tramos) {
+  el.innerHTML = "";
+  for (const s of tramos) {
+    const d = document.createElement("i");
+    d.style.left = (s.ini / caso.duracion * 100) + "%";
+    d.style.width = ((s.fin - s.ini) / caso.duracion * 100) + "%";
+    d.style.background = css(GRUPOS[s.grupo].color);
+    d.title = `${s.nombre} (${Math.round(s.ini)} a ${Math.round(s.fin)} s)`;
+    el.appendChild(d);
+  }
+  const c = document.createElement("div"); c.className = "cursor"; el.appendChild(c);
+}
+
+function ponerCaso(c) {
+  caso = c; t = 0; ultimo = null; corriendo = true; $("play").textContent = "Pausar";
+  document.querySelectorAll("#casos button").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === c.id));
+  const tramosPred = c.predicciones.map((p, i) => ({ ini: p.t, fin: i + 1 < c.predicciones.length ? c.predicciones[i + 1].t : c.duracion, grupo: p.grupo, nombre: p.nombre }));
+  franja($("fp"), tramosPred); franja($("fr"), c.reales);
+  $("nota").textContent = c.nota + " " + DEMO.nota;
+}
+
+function cuadro(ahora) {
+  if (ultimo !== null && corriendo) t = Math.min(t + (ahora - ultimo) / 1000 * vel, caso.duracion);
+  ultimo = ahora;
+  if (t >= caso.duracion) { corriendo = false; $("play").textContent = "Reproducir"; }
+  dibujar($("c1"), false); dibujar($("c2"), true); actualizarTexto();
+  const pos = (t / caso.duracion * 100) + "%";
+  document.querySelectorAll(".cursor").forEach(k => k.style.left = pos);
+  requestAnimationFrame(cuadro);
+}
+
+DEMO.casos.forEach(c => {
+  const b = document.createElement("button"); b.type = "button"; b.textContent = c.titulo; b.dataset.id = c.id;
+  b.onclick = () => ponerCaso(c); $("casos").appendChild(b);
+});
+Object.values(GRUPOS).forEach(g => {
+  const s = document.createElement("span");
+  s.innerHTML = `<b style="background:${css(g.color)}"></b>${g.nombre}`; $("leyenda").appendChild(s);
+});
+$("play").onclick = () => {
+  if (t >= caso.duracion) t = 0;
+  corriendo = !corriendo; $("play").textContent = corriendo ? "Pausar" : "Reproducir";
+};
+$("reiniciar").onclick = () => { t = 0; corriendo = true; $("play").textContent = "Pausar"; };
+$("vel").onclick = () => { vel = vel === 1 ? 2 : vel === 2 ? 4 : 1; $("vel").textContent = `Velocidad ${vel}×`; };
+ponerCaso(DEMO.casos[0]);
+requestAnimationFrame(cuadro);
+</script>
+</body>
+</html>

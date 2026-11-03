@@ -1,0 +1,20 @@
+,F1 macro,±,Δ F1,Pliegues que mejoran,Recall TV,Recall Bloqueo AV,Recall AFib,Precisión TV,seg,Pasa la regla,Decisión,Razón
+Base v2,0.534,0.019,0.0,0,0.653,0.112,0.943,0.272,41.0,referencia,Referencia,"HistGradientBoosting, tope de 5,000 y class_weight."
+F5 Sin redundantes (|ρ| > 0.85),0.535,0.019,0.001,2,0.657,0.103,0.944,0.255,35.0,no,Descartado,"Mismo F1 con 13 variables menos: más simple, sin mejora medible."
+F10 Sin tope por clase,0.537,0.019,0.003,4,0.64,0.108,0.945,0.279,57.0,no,Descartado,La mejora no alcanza el mínimo y entrenar tarda más.
+F3a SMOTE sobre características,0.552,0.016,0.018,5,0.649,0.073,0.955,0.312,70.0,no,Descartado,"Sube el F1, pero baja el recall de Bloqueo AV."
+F3b Aumento sobre la señal cruda,0.559,0.011,0.025,4,0.583,0.093,0.957,0.352,74.0,no,Descartado,"Sube la precisión, pero baja el recall de TV y SVTA: esas ventanas pasan a predecirse como Normal."
+F6 Ruido como filtro previo,0.534,0.025,-0.0,3,0.599,0.103,0.942,0.263,78.0,no,Descartado,"Sin mejora, y son dos modelos en lugar de uno."
+F7a Normal/anormal y luego tipo,0.532,0.009,-0.002,4,0.57,0.081,0.946,0.28,94.0,no,Descartado,Sin mejora y baja el recall de TV.
+F7b Fusión de bradiarritmias (9 clases),0.575,0.016,-0.003,3,,,,,48.0,n/a,Descartado,"No supera a reagrupar las predicciones de la base, y se pierde la distinción clínica."
+F8a Umbrales para priorizar recall (F2),0.525,0.02,-0.009,1,0.64,0.267,0.951,0.246,356.0,no,Descartado por ahora,"El recall de Bloqueo AV sube mucho, pero su precisión cae a la mitad y los umbrales son inestables entre pliegues."
+F8b Pesos por clase para F1 macro,0.552,0.009,0.018,4,0.483,0.11,0.96,0.403,356.0,no,Descartado,"Sube el F1 a costa del recall de TV, lo contrario de lo que se busca."
+F9 SVM RBF afinado,0.487,0.011,-0.047,0,0.554,0.105,0.939,0.279,59.0,no,Descartado,Peor que la base en todos los pliegues.
+F9 XGBoost afinado,0.545,0.014,0.011,5,0.653,0.112,0.951,0.292,165.0,sí,ADOPTADO (v3),El único que cumple la regla: mejora en los 5 pliegues y no baja ningún recall peligroso.
+F9 LightGBM afinado,0.552,0.013,0.018,4,0.599,0.071,0.958,0.388,155.0,no,Descartado,"Sube el F1, pero baja el recall de TV y de Bloqueo AV."
+F1 Ventanas deslizantes (paso de 2 s),0.531,0.021,-0.003,1,0.727,0.1,0.934,0.249,87.0,no,Descartado para entrenar,"Sin mejora en F1, aunque sube el recall de TV. El paso de 2 s sí se usa en la demo, solo para predecir más seguido."
+F2 Prioridad a lo anormal (evaluada con la etiqueta base),0.525,0.022,-0.009,1,0.649,0.132,0.945,0.278,40.0,no,Descartado,Peor en 4 de 5 pliegues.
+F2 Prioridad a lo anormal (con su propia etiqueta),0.523,0.023,-0.011,1,0.649,0.129,0.94,0.261,43.0,n/a,Descartado,Cambia el problema y tampoco mejora.
+F4 Ventana de 5 s,0.477,0.019,-0.057,0,0.623,0.117,0.892,0.215,64.0,n/a,Descartado,"No comparable directamente, y mucho más bajo."
+F4 Ventana de 20 s,0.576,0.017,0.043,5,0.656,0.184,0.959,0.314,52.0,n/a,No adoptado,"F1 mayor, pero es otro problema: el doble de espera para alertar y una etiqueta cada 20 s. Queda como trabajo futuro."
+F11 XGBoost + aumento de señal,0.554,0.012,0.02,5,0.607,0.093,0.956,0.334,82.0,no,Descartado,"Mejora en los 5 pliegues, pero baja el recall de TV y de Bloqueo AV, igual que F3b."

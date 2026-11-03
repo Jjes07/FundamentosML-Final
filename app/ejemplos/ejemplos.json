@@ -1,0 +1,20 @@
+[
+  {
+    "archivo": "ejemplo_ectopias.csv",
+    "titulo": "Normal con ectopias",
+    "nota": "Paciente con ritmo normal y latidos ventriculares prematuros.",
+    "case_id": 1110
+  },
+  {
+    "archivo": "ejemplo_afib.csv",
+    "titulo": "Fibrilación auricular",
+    "nota": "Paciente en fibrilación auricular sostenida.",
+    "case_id": 1738
+  },
+  {
+    "archivo": "ejemplo_tv.csv",
+    "titulo": "Salva de TV",
+    "nota": "Paciente con una salva breve de taquicardia ventricular.",
+    "case_id": 1484
+  }
+]
