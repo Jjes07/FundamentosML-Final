@@ -21,7 +21,7 @@ pip install -r requirements.txt
 streamlit run app/app.py
 ```
 
-- **App:** `app/app.py`. Trae tres ejemplos y acepta archivos propios. No requiere descargar datos ni ejecutar el notebook.
+- **App:** `app/app.py`. Trae cinco ejemplos y acepta archivos propios. No requiere descargar datos ni ejecutar el notebook.
 - **Monitor animado:** abrir `demo/monitor.html` en el navegador. No requiere instalar nada.
 - **Reentrenamiento:** `python reentrenar.py --simular-nuevos 60 --sin-guardar` hace un ensayo completo (requiere los datos).
 
@@ -51,7 +51,7 @@ FundamentosML-Final/
   src/ecg_utils.py           filtro, detector de picos R, características (compartido con la app)
   src/modelos.py             XGBoost con pesos por clase (lo necesita el modelo guardado)
   app/app.py                 interfaz Streamlit (la genera el notebook)
-  app/ejemplos/              tres ECG de 1 minuto de pacientes del test
+  app/ejemplos/              cinco ECG de 1 minuto de pacientes del test
   demo/monitor.html          monitor animado (lo genera generar_demo.py)
   models/                    modelos entrenados, referencias de monitoreo y registro de experimentos
   figures/                   figuras del EDA, los experimentos y la evaluación

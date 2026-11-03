@@ -1,20 +1,32 @@
 [
   {
-    "archivo": "ejemplo_ectopias.csv",
-    "titulo": "Normal con ectopias",
-    "nota": "Paciente con ritmo normal y latidos ventriculares prematuros.",
-    "case_id": 1110
-  },
-  {
     "archivo": "ejemplo_afib.csv",
     "titulo": "Fibrilación auricular",
     "nota": "Paciente en fibrilación auricular sostenida.",
     "case_id": 1738
   },
   {
+    "archivo": "ejemplo_ectopias.csv",
+    "titulo": "Latidos ventriculares prematuros",
+    "nota": "Paciente con latidos ventriculares prematuros frecuentes.",
+    "case_id": 884
+  },
+  {
     "archivo": "ejemplo_tv.csv",
-    "titulo": "Salva de TV",
-    "nota": "Paciente con una salva breve de taquicardia ventricular.",
-    "case_id": 1484
+    "titulo": "Taquicardia ventricular",
+    "nota": "Paciente con salvas de taquicardia ventricular.",
+    "case_id": 2016
+  },
+  {
+    "archivo": "ejemplo_svta.csv",
+    "titulo": "Taquicardia supraventricular",
+    "nota": "Paciente con episodios de taquicardia supraventricular.",
+    "case_id": 4158
+  },
+  {
+    "archivo": "ejemplo_bloqueo.csv",
+    "titulo": "Bloqueo AV (clase difícil)",
+    "nota": "Paciente con bloqueo auriculoventricular. Es una de las clases que el modelo casi no reconoce: este tramo se eligió sin mirar sus predicciones.",
+    "case_id": 4364
   }
 ]

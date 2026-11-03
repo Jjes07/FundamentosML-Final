@@ -7,7 +7,7 @@
 <style>
   :root {
     --fondo: #0d1110; --panel: #151a18; --borde: #2a312e; --texto: #eef1ee; --texto2: #a9b3ae; --traza: #5ee08a;
-    --normal: #2fae66; --revisar: #d9a11b; --alerta: #e5484d; --ruido: #7b8580;
+    
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--fondo); color: var(--texto); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -30,8 +30,6 @@
   .conf { font-size: 13px; color: var(--texto2); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
   canvas { display: block; width: 100%; height: 260px; }
   .alerta { display: flex; gap: 8px; align-items: center; min-height: 40px; padding: 8px 14px; font-weight: 600; font-size: 14px; border-top: 1px solid var(--borde); color: var(--texto2); }
-  .alerta.activa { background: var(--alerta); color: #fff; }
-  .alerta.revisar { background: var(--revisar); color: #161200; }
   .tiempos { margin-top: 14px; background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; padding: 12px 14px; }
   .fila { display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center; margin-bottom: 6px; font-size: 13px; color: var(--texto2); }
   .franja { position: relative; height: 22px; background: var(--fondo); border-radius: 3px; overflow: hidden; }
@@ -59,7 +57,8 @@
   <div class="controles">
     <span id="casos" style="display:contents"></span>
     <span class="sep"></span>
-    <button id="play" type="button">Pausar</button>
+    <button id="play" type="button">Reproducir</button>
+    <button id="son" type="button">Sonido: sí</button>
     <button id="reiniciar" type="button">Reiniciar</button>
     <button id="vel" type="button">Velocidad 1×</button>
   </div>
@@ -94,17 +93,45 @@
 <script>
 const DEMO = /*DATOS*/null;
 
-const GRUPOS = {
-  normal:  { nombre: "Ritmo normal", color: "--normal" },
-  revisar: { nombre: "Conviene revisar", color: "--revisar" },
-  alerta:  { nombre: "Arritmia peligrosa", color: "--alerta" },
-  ruido:   { nombre: "Señal no interpretable", color: "--ruido" },
+// Un color por clase. Normal en verde y ruido en gris; las peligrosas activan la alerta
+const CLASES = {
+  "Normal":                  { color: "#2fae66" },
+  "AFib":                    { color: "#e5484d", peligrosa: true },
+  "TV":                      { color: "#d946ef", peligrosa: true },
+  "SVTA":                    { color: "#f97316", peligrosa: true },
+  "Bloqueo AV":              { color: "#8b5cf6", peligrosa: true },
+  "Ectopia ventricular":     { color: "#eab308" },
+  "Ectopia auricular":       { color: "#22d3ee" },
+  "Disfuncion nodo sinusal": { color: "#3b82f6" },
+  "WAP/MAT":                 { color: "#f9a8d4" },
+  "Ruido":                   { color: "#7b8580" },
+  "Inclasificable":          { color: "#4b5563" },
+};
+const colorDe = c => (CLASES[c] || CLASES.Inclasificable).color;
+const textoSobre = hex => {
+  // Texto oscuro sobre colores claros y blanco sobre oscuros (luminancia aproximada)
+  const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#111" : "#fff";
 };
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const $ = id => document.getElementById(id);
 const VENTANA_VISIBLE = 8;  // segundos en pantalla
 
-let caso = DEMO.casos[0], t = 0, ultimo = null, corriendo = true, vel = 1;
+let caso = DEMO.casos[0], t = 0, ultimo = null, corriendo = false, vel = 1;
+
+// Pitido en cada pico R, como un monitor. El navegador solo permite sonido después de un clic
+let audio = null, sonido = true;
+function activarAudio() {
+  if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+  if (audio.state === "suspended") audio.resume();
+}
+function pitido() {
+  if (!audio || !sonido) return;
+  const o = audio.createOscillator(), g = audio.createGain(), a = audio.currentTime;
+  o.type = "sine"; o.frequency.value = 960;
+  g.gain.setValueAtTime(0, a); g.gain.linearRampToValueAtTime(0.25, a + 0.005); g.gain.exponentialRampToValueAtTime(0.001, a + 0.09);
+  o.connect(g).connect(audio.destination); o.start(a); o.stop(a + 0.1);
+}
 
 function prediccionEn(s) {
   // Última predicción ya disponible en el instante s: el modelo solo usa los 10 s anteriores
@@ -127,41 +154,44 @@ function dibujar(cv, fondo) {
     ps.forEach((p, i) => {
       const fin = i + 1 < ps.length ? ps[i + 1].t : caso.duracion;
       if (fin < x0 || p.t > t) return;
-      g.globalAlpha = 0.22; g.fillStyle = css(GRUPOS[p.grupo].color);
+      g.globalAlpha = 0.22; g.fillStyle = colorDe(p.clase);
       g.fillRect(xDe(p.t), 0, xDe(Math.min(fin, t)) - xDe(p.t), h);
       g.globalAlpha = 1;
     });
   }
   // Cuadrícula tenue de 1 s
   g.strokeStyle = css("--borde"); g.lineWidth = 1; g.beginPath();
-  for (let s = Math.ceil(Math.max(x0, 0)); s <= t; s++) { g.moveTo(xDe(s), 0); g.lineTo(xDe(s), h); }
+  for (let s = Math.ceil(x0); s <= t; s++) { g.moveTo(xDe(s), 0); g.lineTo(xDe(s), h); }
   g.stroke();
-  // Traza: últimos segundos, con escala fija por caso
-  const fs = caso.fs, a = Math.max(0, Math.floor(x0 * fs)), b = Math.min(caso.ecg.length - 1, Math.floor(t * fs));
+  // Traza: últimos segundos, con escala fija por caso. La señal empieza `previo` segundos antes del minuto
+  const fs = caso.fs, pre = caso.previo || 0;
+  const a = Math.max(0, Math.floor((x0 + pre) * fs)), b = Math.min(caso.ecg.length - 1, Math.floor((t + pre) * fs));
   g.strokeStyle = css("--traza"); g.lineWidth = 1.6; g.lineJoin = "round"; g.beginPath();
   for (let i = a; i <= b; i++) {
     const y = h * 0.5 - (caso.ecg[i] / caso.escala) * h * 0.42;
-    if (i === a) g.moveTo(xDe(i / fs), y); else g.lineTo(xDe(i / fs), y);
+    if (i === a) g.moveTo(xDe(i / fs - pre), y); else g.lineTo(xDe(i / fs - pre), y);
   }
   g.stroke();
 }
 
 function actualizarTexto() {
-  const p = prediccionEn(t);
+  const p = prediccionEn(t), al = $("alerta");
   $("fc1").textContent = p && p.fc ? Math.round(p.fc) : "--";
+  al.style.background = ""; al.style.color = "";
   if (!p) {
     $("ritmo").textContent = "Analizando…"; $("conf").textContent = ""; $("edad").textContent = "";
-    $("alerta").className = "alerta"; $("alerta").textContent = "Esperando los primeros 10 segundos";
+    al.className = "alerta"; al.textContent = "Esperando los primeros 10 segundos";
     return;
   }
   $("ritmo").textContent = p.nombre;
+  $("ritmo").style.color = p.clase === "Normal" ? "" : colorDe(p.clase);
   $("conf").textContent = `Confianza ${Math.round(p.conf * 100)} %`;
   $("edad").textContent = `Minuto ${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
-  const al = $("alerta");
-  if (p.grupo === "alerta") { al.className = "alerta activa"; al.textContent = `⚠ Alerta: ${p.nombre}`; }
-  else if (p.grupo === "revisar") { al.className = "alerta revisar"; al.textContent = `▲ Conviene revisar: ${p.nombre}`; }
-  else if (p.grupo === "ruido") { al.className = "alerta"; al.textContent = "Señal con ruido: revisar electrodos"; }
-  else { al.className = "alerta"; al.textContent = "✓ Sin alertas"; }
+  al.className = "alerta";
+  if (p.clase === "Normal") { al.textContent = "✓ Sin alertas"; return; }
+  if (p.clase === "Ruido") { al.textContent = "Señal con ruido: revisar electrodos"; return; }
+  al.style.background = colorDe(p.clase); al.style.color = textoSobre(colorDe(p.clase));
+  al.textContent = CLASES[p.clase] && CLASES[p.clase].peligrosa ? `⚠ Arritmia peligrosa: ${p.nombre}` : `Arritmia: ${p.nombre}`;
 }
 
 function franja(el, tramos) {
@@ -170,24 +200,38 @@ function franja(el, tramos) {
     const d = document.createElement("i");
     d.style.left = (s.ini / caso.duracion * 100) + "%";
     d.style.width = ((s.fin - s.ini) / caso.duracion * 100) + "%";
-    d.style.background = css(GRUPOS[s.grupo].color);
+    d.style.background = colorDe(s.clase);
     d.title = `${s.nombre} (${Math.round(s.ini)} a ${Math.round(s.fin)} s)`;
     el.appendChild(d);
   }
   const c = document.createElement("div"); c.className = "cursor"; el.appendChild(c);
 }
 
-function ponerCaso(c) {
-  caso = c; t = 0; ultimo = null; corriendo = true; $("play").textContent = "Pausar";
+function leyenda(c) {
+  // Solo las clases que aparecen en este caso, en la predicción o en la etiqueta
+  const vistas = new Map();
+  [...c.reales, ...c.predicciones].forEach(s => vistas.set(s.clase, s.nombre));
+  $("leyenda").innerHTML = "";
+  Object.keys(CLASES).filter(k => vistas.has(k)).forEach(k => {
+    const s = document.createElement("span");
+    s.innerHTML = `<b style="background:${colorDe(k)}"></b>${vistas.get(k)}${CLASES[k].peligrosa ? " (alerta)" : ""}`;
+    $("leyenda").appendChild(s);
+  });
+}
+
+function ponerCaso(c, reproducir) {
+  caso = c; t = 0; ultimo = null; corriendo = reproducir; $("play").textContent = corriendo ? "Pausar" : "Reproducir";
   document.querySelectorAll("#casos button").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === c.id));
-  const tramosPred = c.predicciones.map((p, i) => ({ ini: p.t, fin: i + 1 < c.predicciones.length ? c.predicciones[i + 1].t : c.duracion, grupo: p.grupo, nombre: p.nombre }));
-  franja($("fp"), tramosPred); franja($("fr"), c.reales);
+  const tramosPred = c.predicciones.map((p, i) => ({ ini: p.t, fin: i + 1 < c.predicciones.length ? c.predicciones[i + 1].t : c.duracion, clase: p.clase, nombre: p.nombre }));
+  franja($("fp"), tramosPred); franja($("fr"), c.reales); leyenda(c);
   $("nota").textContent = c.nota + " " + DEMO.nota;
 }
 
 function cuadro(ahora) {
+  const antes = t;
   if (ultimo !== null && corriendo) t = Math.min(t + (ahora - ultimo) / 1000 * vel, caso.duracion);
   ultimo = ahora;
+  if (corriendo && t > antes && (caso.picos || []).some(p => p > antes && p <= t)) pitido();
   if (t >= caso.duracion) { corriendo = false; $("play").textContent = "Reproducir"; }
   dibujar($("c1"), false); dibujar($("c2"), true); actualizarTexto();
   const pos = (t / caso.duracion * 100) + "%";
@@ -197,19 +241,20 @@ function cuadro(ahora) {
 
 DEMO.casos.forEach(c => {
   const b = document.createElement("button"); b.type = "button"; b.textContent = c.titulo; b.dataset.id = c.id;
-  b.onclick = () => ponerCaso(c); $("casos").appendChild(b);
-});
-Object.values(GRUPOS).forEach(g => {
-  const s = document.createElement("span");
-  s.innerHTML = `<b style="background:${css(g.color)}"></b>${g.nombre}`; $("leyenda").appendChild(s);
+  b.onclick = () => { activarAudio(); ponerCaso(c, true); }; $("casos").appendChild(b);
 });
 $("play").onclick = () => {
+  activarAudio();
   if (t >= caso.duracion) t = 0;
   corriendo = !corriendo; $("play").textContent = corriendo ? "Pausar" : "Reproducir";
 };
-$("reiniciar").onclick = () => { t = 0; corriendo = true; $("play").textContent = "Pausar"; };
+$("reiniciar").onclick = () => { activarAudio(); t = 0; corriendo = true; $("play").textContent = "Pausar"; };
 $("vel").onclick = () => { vel = vel === 1 ? 2 : vel === 2 ? 4 : 1; $("vel").textContent = `Velocidad ${vel}×`; };
-ponerCaso(DEMO.casos[0]);
+$("son").onclick = () => {
+  activarAudio(); sonido = !sonido;
+  $("son").textContent = sonido ? "Sonido: sí" : "Sonido: no";
+};
+ponerCaso(DEMO.casos[0], false);
 requestAnimationFrame(cuadro);
 </script>
 </body>

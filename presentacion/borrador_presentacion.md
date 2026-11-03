@@ -356,15 +356,18 @@
   - Señal con fondo por estado: **rojo alerta** (AFib, SVTA, TV, Bloqueo AV), **ámbar revisar** (otra clase no normal o confianza baja), **verde sin alerta**, **gris ruido**.
   - Tabla por tramo de 10 s (inicio, estado, ritmo en lenguaje claro, frecuencia, confianza), descargable en CSV.
   - Avisos de formato y aclaración de que es una herramienta de apoyo.
-- **Ejemplos (`app/ejemplos/`):** tres tramos de 1 minuto de pacientes del test, elegidos solo con la etiqueta de los médicos (predicciones cada 2 s del monitor):
-  - Normal con ectopias (caso 1110): 22 Normal, 3 Ectopia ventricular y **1 falsa alarma de Bloqueo AV**.
-  - AFib (caso 1738): 26 de 26 ventanas AFib.
-  - Salva de TV (caso 1484): 20 Normal y 6 TV; la alerta dura unos 10 s mientras la salva está en la ventana.
-- **Monitor (`demo/monitor.html`):** página autónoma con dos monitores sincronizados, el convencional y el que colorea según la predicción, junto a la etiqueta de los médicos. Reproduce predicciones ya calculadas con el modelo real.
+- **Ejemplos (`app/ejemplos/`):** cinco tramos de 1 minuto de pacientes del test (31 predicciones cada uno, una cada 2 s en el monitor):
+  - Cuatro **ilustrativos**, elegidos como el minuto que el modelo clasifica mejor; no representan el desempeño promedio:
+    - AFib (caso 1738): 31 de 31 AFib.
+    - Latidos ventriculares prematuros (caso 884): 31 de 31 aciertos.
+    - TV (caso 2016, salvas en el 30 % del minuto): 17 TV, 10 Normal y 4 Ectopia ventricular.
+    - SVTA (caso 4158, 34 % del minuto): 28 SVTA, 2 AFib y 1 Normal.
+  - Uno de **clase difícil**, elegido solo por su etiqueta: Bloqueo AV (caso 4364, todo el minuto): nunca lo reconoce; 20 Normal y 11 Disfunción del nodo.
+- **Monitor (`demo/monitor.html`):** página autónoma con dos monitores sincronizados: el convencional, con un pitido en cada latido detectado, y el que colorea según la predicción (un color por clase), junto a la etiqueta de los médicos. Trae 10 s de señal previa, así que predice desde el segundo 0. Reproduce predicciones ya calculadas con el modelo real.
 - **Integración real (no implementada):** el monitor transmitiría por protocolo del fabricante o HL7 (VitalDB grabó con Vital Recorder); se guardarían los últimos 10 s y se repetiría el mismo análisis.
 
 ### Notas del Orador
-> "La app está pensada para personal no técnico. Primero muestra la conclusión, cuántos tramos tienen alerta o requieren revisión, y luego la señal coloreada y una tabla descargable. Los tres ejemplos son de pacientes del test, elegidos sin mirar si el modelo acierta, y los analiza una copia del modelo que nunca vio a esos pacientes. Por eso también se ven errores reales, como una falsa alarma de Bloqueo AV en el ejemplo de ectopias. El monitor de demostración muestra el retardo real de una ventana de 10 segundos: la alerta de TV aparece cuando la salva entra en la ventana."
+> "La app está pensada para personal no técnico. Primero muestra la conclusión, cuántos tramos tienen alerta o requieren revisión, y luego la señal coloreada y una tabla descargable. Los ejemplos son de pacientes del test y los analiza una copia del modelo que nunca vio a esos pacientes. Cuatro los elegimos para ilustrar cómo se ve el sistema cuando acierta, y lo decimos así; el quinto, Bloqueo AV, lo elegimos sin mirar al modelo, y ahí se ve su límite: nunca reconoce el bloqueo. El monitor muestra además el retardo real de una ventana de 10 segundos: la alerta de TV se mantiene mientras la salva sigue dentro de la ventana."
 
 ---
 

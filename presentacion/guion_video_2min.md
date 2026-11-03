@@ -18,8 +18,8 @@
 | :---: | :---: | :--- |
 | **B1** | 00:00 – 00:15 | Título de la app y aviso de herramienta de apoyo |
 | **B2** | 00:15 – 00:45 | Ejemplo "Fibrilación auricular": conclusión, señal coloreada, tabla |
-| **B3** | 00:45 – 01:15 | Monitor de demostración con la salva de TV |
-| **B4** | 01:15 – 01:40 | Ejemplo "Normal con ectopias", control de confianza y descarga |
+| **B3** | 00:45 – 01:15 | Monitor de demostración con taquicardia ventricular y pitido por latido |
+| **B4** | 01:15 – 01:40 | Monitor con bloqueo AV: una clase que el modelo no reconoce |
 | **B5** | 01:40 – 02:00 | Archivo propio, respaldo del modelo y cierre |
 
 ---
@@ -49,28 +49,25 @@
 
 ---
 
-### B3. Monitor con la salva de taquicardia ventricular (00:45 – 01:15)
+### B3. Monitor con taquicardia ventricular (00:45 – 01:15)
 
 **Pantalla**
-- `demo/monitor.html`, ejemplo "Salva de TV" (caso 1484). Dos monitores sincronizados: el convencional y el que colorea según el modelo, con la etiqueta de los médicos al lado.
-- Dejar correr hasta que entra la salva: la alerta de TV se enciende y se mantiene unos 10 s.
+- `demo/monitor.html`, botón "Taquicardia ventricular" (caso 2016), con "Sonido: sí". Dos monitores sincronizados: el convencional, que pita en cada latido, y el que colorea según el modelo, con la etiqueta de los médicos debajo.
+- Dejar correr hasta que entra una salva: el fondo pasa al color de TV y aparece "⚠ Arritmia peligrosa: Taquicardia ventricular".
 
 **Narración** (unas 65 palabras)
-> "Así se vería en un quirófano. A la izquierda, el monitor convencional; a la derecha, el mismo trazo con la predicción del modelo, actualizada cada dos segundos. Cuando aparece una salva breve de taquicardia ventricular, el monitor se pone en rojo. La alerta llega cuando la salva entra en los últimos diez segundos analizados: ese es el retardo real de este diseño."
+> "Así se vería en un quirófano. A la izquierda, el monitor convencional; a la derecha, el mismo trazo con la predicción del modelo, actualizada cada dos segundos. Cuando llegan las salvas de taquicardia ventricular, latidos anchos y rápidos, el monitor se pone en alerta. La alerta se mantiene mientras la salva siga dentro de los últimos diez segundos analizados: ese es el retardo real de este diseño."
 
 ---
 
-### B4. Ectopias, confianza y descarga (01:15 – 01:40)
+### B4. Una clase difícil: bloqueo AV (01:15 – 01:40)
 
 **Pantalla**
-- En la app, ejemplo "Normal con ectopias" (caso 1110).
-- Mover el control "Confianza mínima" de 0.60 a un valor más alto y mostrar cómo cambian los tramos "Para revisar".
-- Clic en "Descargar resultados (CSV)".
+- En el monitor, botón "Bloqueo AV (clase difícil)" (caso 4364). La franja de los médicos marca bloqueo AV todo el minuto; la del modelo muestra ritmo normal y disfunción del nodo.
+- Leer la nota: este tramo se eligió sin mirar las predicciones.
 
 **Narración** (unas 55 palabras)
-> "En este paciente con latidos prematuros, la mayoría de los tramos son normales. Si el modelo duda, el tramo se marca para revisión, y el usuario decide qué tan exigente ser con este control. Los resultados se descargan para el registro. El modelo también se equivoca: por eso siempre pide confirmar en el monitor antes de actuar."
-
-**Nota para la grabación:** en las predicciones cada 2 s del monitor, este ejemplo tuvo una falsa alarma aislada de Bloqueo AV. Si aparece en la app, mencionarla: muestra con honestidad la baja precisión de esa clase.
+> "No todo sale bien. Aquí los médicos marcaron un bloqueo auriculoventricular durante todo el minuto, y el modelo nunca lo reconoce: lo confunde con ritmos lentos. Solo hubo nueve pacientes con bloqueo en toda la base. Por eso el sistema es un apoyo: cada alerta, y cada silencio, se confirma en el monitor."
 
 ---
 
@@ -91,10 +88,12 @@
 | :--- | :--- |
 | Tramos de 10 s, predicciones cada 2 s en el monitor | Secciones 8 y 15.2 |
 | "Casi el 92 %" de los tramos anormales | G9: sensibilidad 0.919 al agrupar en normal y anormal (validación externa, sin Ruido) |
-| Alerta de TV que dura unos 10 s | Interpretación de la sección 15 (salida de `generar_demo.py`) |
-| Falsa alarma de Bloqueo AV en el ejemplo de ectopias | Salida de `generar_demo.py`: 22 Normal, 3 Ectopia ventricular, 1 Bloqueo AV |
+| TV: 17 de 31 predicciones; Bloqueo AV nunca reconocido (20 Normal, 11 Disfunción del nodo) | Salida de `generar_demo.py` (sección 15) |
+| Nueve pacientes con bloqueo AV | Sección 8 (409 ventanas de 9 pacientes) |
 
 ## Pendiente para la grabación
 
 - Grabar con la app local o con la app ya publicada (publicarla requiere una cuenta del equipo en Streamlit Community Cloud o Hugging Face Spaces; ver `PENDIENTES.md`).
 - Cronometrar la narración: si pasa de 2 minutos, recortar B4.
+- En el monitor, la demo arranca en pausa: el sonido solo funciona después de un clic (Reproducir o elegir un caso).
+- Los cuatro primeros casos se eligieron por ser los que el modelo clasifica mejor. Si se muestran, decirlo: "son ejemplos ilustrativos".

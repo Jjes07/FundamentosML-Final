@@ -40,9 +40,9 @@ Lista de cambios acordados por el equipo. Cada punto dice **qué** hacer, **por 
 | F11 XGBoost + aumento (nuevo) | Hecho, descartado | 0.554, pero baja el recall de TV y Bloqueo AV |
 | G1 a G9 | Hechos | Secciones 11 a 14. Agrupado en normal y anormal: F1 0.878, sensibilidad 0.919, AUROC 0.968 |
 | H1 Probar la app | Hecho | Se corrigió: Bloqueo AV no tenía nombre ni alerta, y faltaban selector de ejemplos y validación de archivos |
-| H2 Ejemplos | Hecho | 3 tramos de 1 minuto de pacientes del test, elegidos solo por sus etiquetas |
+| H2 Ejemplos | Hecho | 5 tramos de 1 minuto de pacientes del test: 4 ilustrativos elegidos por el modelo (AFib, ectopia ventricular, TV, SVTA) y Bloqueo AV elegido solo por su etiqueta |
 | H3 Formato de entrada | Hecho | Sección 15.2 y la propia app |
-| H4 Monitor | Hecho | `demo/monitor.html` |
+| H4 Monitor | Hecho | `demo/monitor.html`: pitido por latido, color por clase y 10 s de señal previa para predecir desde el segundo 0 |
 | H5 Tabla de deriva | Hecho | Sección 16.1 |
 | H6 Reentrenamiento | Hecho | `reentrenar.py`, ensayado en los dos sentidos. Sección 16.2 |
 | I1 Conclusiones | Hecho | Sección 17 |
@@ -266,7 +266,7 @@ Explicar que la tabla de comparación inicial (sección 11.1) usa hiperparámetr
 
 **H1. Probar la app de Streamlit.** El notebook genera `app/app.py`, pero nunca se ejecutó con `streamlit run app/app.py`. Probarla y corregir lo que falle.
 
-**H2. Ejemplos para la demo:** tres casos del conjunto de **test**, de 1 minuto cada uno, que en conjunto muestren varios ritmos (p. ej. normal con ectopias; AFib; salva de TV con ruido). Reemplazan al ejemplo actual de 5 minutos del caso 1001.
+**H2. Ejemplos para la demo:** tres casos del conjunto de **test**, de 1 minuto cada uno, que en conjunto muestren varios ritmos (p. ej. normal con ectopias; AFib; salva de TV con ruido). Reemplazan al ejemplo actual de 5 minutos del caso 1001. *Actualizado: pasaron a cinco casos (ver la tabla de estado).*
 
 **H3. Documentar el formato de entrada.** Los `.npz` de `data/ecg_cache` son la caché interna del proyecto: un archivo comprimido de NumPy con el vector de voltajes (`ecg`) y su desfase de tiempo (`offset_s`). No es el formato de un monitor. Un monitor real transmite la señal en vivo (protocolos del fabricante o HL7; VitalDB la grabó con Vital Recorder). La integración sería: recibir el flujo, guardar los últimos 10 s en memoria, extraer las características y predecir. La app acepta CSV para la demostración.
 
